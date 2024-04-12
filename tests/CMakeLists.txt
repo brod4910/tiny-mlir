@@ -5,14 +5,14 @@ configure_lit_site_cfg(
     ${CMAKE_CURRENT_SOURCE_DIR}/lit.cmake.cfg.py
 )
 
-set (MLIR_TUTORIAL_TEST_DEPENDS
+set (TINY_TEST_DEPENDS
     FileCheck count not
     mlir-opt
     mlir-cpu-runner
     tiny-opt
 )
 
-add_lit_testsuite(check-mlir-tutorial "Running the Tiny regression tests"
+add_lit_testsuite(check-tiny "Running the Tiny regression tests"
     ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS ${MLIR_TUTORIAL_TEST_DEPENDS}
+    DEPENDS ${TINY_TEST_DEPENDS}
 )
