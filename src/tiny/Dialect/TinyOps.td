@@ -13,70 +13,96 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- Traits -----------------------
 --------------------------------------------------- */
 
-// TODO: Find out why ElementwiseMappable doesn't like being put in the NativeOpTrait
-
-def UnaryTrait : NativeOpTrait<"Unary", []>;
 
 /* 
 --------------------------------------------------- 
 ------------------- UNARY OPS ---------------------
 --------------------------------------------------- */
 
-def NoOp : Tiny_Op<"noop", [UnaryTrait, ElementwiseMappable]> {
-    let summary = "A No-Op.";
+class UnaryOp<string mnemonic> : Tiny_Op<mnemonic, [ElementwiseMappable]>;
+
+def NoOp : UnaryOp<"noop"> {
 
     let description = [{
         A No-Op operation. Undecided but this operation will most likely
         get cannonicalized and removed from the graph.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
-def Exp2 : Tiny_Op<"exp2", [UnaryTrait, ElementwiseMappable]> {
+def Exp2 : UnaryOp<"exp2"> {
     let summary = "Two raised by value.";
 
     let description = [{
         An operation that raises 2 by the value.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
-def Log2 : Tiny_Op<"log2", [UnaryTrait, ElementwiseMappable]> {
+def Log2 : UnaryOp<"log2"> {
     let summary = "Binary (base-2) logarithm of the value.";
 
     let description = [{
         An operation that computes the binary (base-2) logarithm of the value.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
-def Cast : Tiny_Op<"cast", [UnaryTrait, ElementwiseMappable]> {
+def Cast : UnaryOp<"cast"> {
     let summary = "Cast the value to another type.";
 
     let description = [{
         An operation that casts the value to another qualified-type.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
-def Sin : Tiny_Op<"sin", [UnaryTrait, ElementwiseMappable]> {
+def Sin : UnaryOp<"sin"> {
     let summary = "Sine of the value.";
 
     let description = [{
         An operation that computes the sine of the value.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
-def Sqrt : Tiny_Op<"sqrt", [UnaryTrait, ElementwiseMappable]> {
+def Sqrt : UnaryOp<"sqrt"> {
     let summary = "Square-root of the value";
 
     let description = [{
         An operation that computes the square-root of the value.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
-def Neg : Tiny_Op<"neg", [UnaryTrait, ElementwiseMappable]> {
+def Neg : UnaryOp<"neg"> {
     let summary = "Negate the value.";
 
     let description = [{
         An operation that computes the negation of the value.
     }];
+
+    let arguments = (ins AnyTensor:$value);
+
+    let results = (outs AnyTensor:$output);
 }
 
 /* 

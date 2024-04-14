@@ -36,7 +36,8 @@ def Tiny_Dialect : Dialect {
     }];
 
     let cppNamespace = "::mlir::tiny";
-
+    
+    let hasConstantMaterializer = 1;
     let hasCanonicalizer = 1;
 }
 #endif // TINY_DIALECT
