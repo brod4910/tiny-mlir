@@ -3,7 +3,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
-#include "src/tiny/Dialect/TinyDialect.h"
+#include "src/tiny/Dialect/Tiny/TinyDialect.h"
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;

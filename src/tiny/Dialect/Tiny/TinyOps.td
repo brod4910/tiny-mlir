@@ -19,90 +19,69 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 ------------------- UNARY OPS ---------------------
 --------------------------------------------------- */
 
-class UnaryOp<string mnemonic> : Tiny_Op<mnemonic, [ElementwiseMappable]>;
+class Tiny_UnaryOp<string mnemonic> : Tiny_Op<mnemonic, [ElementwiseMappable]> {
+    let arguments = (ins AnyTensor:$value);
 
-def NoOp : UnaryOp<"noop"> {
+    let results = (outs AnyTensor:$output);
+
+    let assemblyFormat = "$value attr-dict `:` type($value) `->` type($output)";
+}
+
+def Tiny_NoOp : Tiny_UnaryOp<"noop"> {
+    let summary = "No-operation.";
 
     let description = [{
         A No-Op operation. Undecided but this operation will most likely
         get cannonicalized and removed from the graph.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
-def Exp2 : UnaryOp<"exp2"> {
+def Tiny_Exp2 : Tiny_UnaryOp<"exp2"> {
     let summary = "Two raised by value.";
 
     let description = [{
         An operation that raises 2 by the value.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
-def Log2 : UnaryOp<"log2"> {
+def Tiny_Log2 : Tiny_UnaryOp<"log2"> {
     let summary = "Binary (base-2) logarithm of the value.";
 
     let description = [{
         An operation that computes the binary (base-2) logarithm of the value.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
-def Cast : UnaryOp<"cast"> {
+def Tiny_Cast : Tiny_UnaryOp<"cast"> {
     let summary = "Cast the value to another type.";
 
     let description = [{
         An operation that casts the value to another qualified-type.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
-def Sin : UnaryOp<"sin"> {
+def Tiny_Sin : Tiny_UnaryOp<"sin"> {
     let summary = "Sine of the value.";
 
     let description = [{
         An operation that computes the sine of the value.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
-def Sqrt : UnaryOp<"sqrt"> {
+def Tiny_Sqrt : Tiny_UnaryOp<"sqrt"> {
     let summary = "Square-root of the value";
 
     let description = [{
         An operation that computes the square-root of the value.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
-def Neg : UnaryOp<"neg"> {
+def Tiny_Neg : Tiny_UnaryOp<"neg"> {
     let summary = "Negate the value.";
 
     let description = [{
         An operation that computes the negation of the value.
     }];
-
-    let arguments = (ins AnyTensor:$value);
-
-    let results = (outs AnyTensor:$output);
 }
 
 /* 
