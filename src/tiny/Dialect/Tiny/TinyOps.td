@@ -5,6 +5,7 @@ include "TinyDialect.td"
 include "TinyTypes.td"
 
 include "mlir/IR/OpBase.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 
 class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnemonic, traits>;
 
@@ -19,7 +20,7 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 ------------------- UNARY OPS ---------------------
 --------------------------------------------------- */
 
-class Tiny_UnaryOp<string mnemonic> : Tiny_Op<mnemonic, [ElementwiseMappable]> {
+class Tiny_UnaryOp<string mnemonic> : Tiny_Op<mnemonic, [ElementwiseMappable, Pure]> {
     let arguments = (ins AnyTensor:$value);
 
     let results = (outs AnyTensor:$output);
