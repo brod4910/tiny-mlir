@@ -1,1 +1,3 @@
-#include "src/tiny/Dialect/Tiny/TinyOps.cpp.inc"
+#include "src/tiny/Dialect/Tiny/TinyOps.h"
+
+namespace mlir::tiny {}

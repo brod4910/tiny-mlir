@@ -15,4 +15,5 @@ void TinyDialect::initialize() {
 #include "src/tiny/Dialect/Tiny/TinyOps.cpp.inc"
       >();
 }
+
 } // namespace mlir::tiny

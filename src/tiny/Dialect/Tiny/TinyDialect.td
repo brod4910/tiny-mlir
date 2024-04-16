@@ -8,7 +8,7 @@ def Tiny_Dialect : Dialect {
   let name = "tiny";
 
   // Short summary of the dialect.
-  let summary = "An MLIR for tiny ml-ops.";
+  let summary = "An MLIR for tiny Machine Learning Ops.";
 
   // The description of the dialect.
   let description = [{
