@@ -2,7 +2,6 @@
 #define TINY_OPS
 
 include "TinyDialect.td"
-include "TinyTypes.td"
 
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
