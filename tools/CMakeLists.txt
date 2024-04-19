@@ -7,6 +7,7 @@ set (LIBS
     MLIROptLib
     MLIRTiny
     MLIRPass
+    MLIRTransforms
 )
 
 add_llvm_executable(tiny-opt tiny-opt.cpp)

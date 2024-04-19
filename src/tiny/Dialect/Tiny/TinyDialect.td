@@ -35,6 +35,11 @@ def Tiny_Dialect : Dialect {
             These are the syntax sugar. They are built on top of the mlops and support most of the things that you could expect from a tensor library.
     }];
 
+    let dependentDialects = [
+        "arith::ArithDialect",
+        "math::MathDialect",
+    ];
+
     let cppNamespace = "::mlir::tiny";
     
     // let hasConstantMaterializer = 1;
