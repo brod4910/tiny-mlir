@@ -8,7 +8,7 @@ def Tiny_Dialect : Dialect {
   let name = "tiny";
 
   // Short summary of the dialect.
-  let summary = "An MLIR for tiny ml-ops.";
+  let summary = "An MLIR for tiny Machine Learning Ops.";
 
   // The description of the dialect.
   let description = [{
@@ -35,8 +35,14 @@ def Tiny_Dialect : Dialect {
             These are the syntax sugar. They are built on top of the mlops and support most of the things that you could expect from a tensor library.
     }];
 
-    let cppNamespace = "::mlir::tiny";
+    let dependentDialects = [
+        "arith::ArithDialect",
+        "math::MathDialect",
+    ];
 
-    let hasCanonicalizer = 1;
+    let cppNamespace = "::mlir::tiny";
+    
+    // let hasConstantMaterializer = 1;
+    // let hasCanonicalizer = 1;
 }
 #endif // TINY_DIALECT

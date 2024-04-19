@@ -4,6 +4,10 @@ get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 set (LIBS
     ${dialect_libs}
     ${conversion_libs}
+    MLIROptLib
+    MLIRTiny
+    MLIRPass
+    MLIRTransforms
 )
 
 add_llvm_executable(tiny-opt tiny-opt.cpp)

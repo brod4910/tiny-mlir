@@ -7,7 +7,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_DEPS ON)
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE INTERNAL "" FORCE)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE INTERNAL "" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "14.4" CACHE INTERNAL "" FORCE)
 
 set(LLVM_BUILD_DIR "" CACHE PATH "Path to LLVM build directory")
 message(STATUS "Using LLVM build directory: ${LLVM_BUILD_DIR}")
@@ -33,7 +33,7 @@ include_directories(${PROJECT_SOURCE_DIR}/externals/llvm-project)
 include_directories(${PROJECT_BINARY_DIR})
 
 # LDFLAGS
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++")
 
 add_subdirectory(tests)
 add_subdirectory(tools)
