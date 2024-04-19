@@ -6,7 +6,29 @@
 #include "mlir/IR/FunctionInterfaces.h"
 
 namespace mlir::tiny {
-//-- FuncOp --
+
+bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  if (inputs.size() != 1 || outputs.size() != 1) {
+    return false;
+  }
+
+  TensorType input = inputs.front().dyn_cast<TensorType>();
+  TensorType output = outputs.front().dyn_cast<TensorType>();
+
+  if (!input || !output || input.getElementType() != output.getElementType()) {
+    return false;
+  }
+
+  return !input.hasRank() || !output.hasRank() || input != output;
+}
+
+/*
+---------------------------------------------------
+------------------ FUNCTION OPS -------------------
+---------------------------------------------------
+
+            COPIED FROM THE MLIR REPO
+*/
 void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
                    FunctionType type, ArrayRef<NamedAttribute> attrs,
                    ArrayRef<DictionaryAttr> argAttrs) {
@@ -98,4 +120,5 @@ LogicalResult ReturnOp::verify() {
 
   return success();
 }
+
 } // namespace mlir::tiny

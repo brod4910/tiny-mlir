@@ -3,9 +3,10 @@
 
 include "TinyDialect.td"
 
-include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
+include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 include "mlir/IR/FunctionInterfaces.td"
@@ -26,7 +27,7 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 ------------------- UNARY OPS ---------------------
 --------------------------------------------------- */
 
-class Tiny_UnaryOp<string mnemonic> : Tiny_Op<mnemonic, [ElementwiseMappable, Pure]> {
+class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
     let arguments = (ins AnyTensor:$value);
 
     let results = (outs AnyTensor:$output);
@@ -42,7 +43,7 @@ def Tiny_NoOp : Tiny_UnaryOp<"noop"> {
     }];
 }
 
-def Tiny_Exp2 : Tiny_UnaryOp<"exp2"> {
+def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
     let summary = "Two raised by value.";
 
     let description = [{
@@ -50,7 +51,7 @@ def Tiny_Exp2 : Tiny_UnaryOp<"exp2"> {
     }];
 }
 
-def Tiny_Log2 : Tiny_UnaryOp<"log2"> {
+def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
     let summary = "Binary (base-2) logarithm of the value.";
 
     let description = [{
@@ -58,15 +59,17 @@ def Tiny_Log2 : Tiny_UnaryOp<"log2"> {
     }];
 }
 
-def Tiny_Cast : Tiny_UnaryOp<"cast"> {
-    let summary = "Cast the value to another type.";
+def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterface>, 
+                                      Pure, 
+                                      SameOperandsAndResultShape]> {
+    let summary = "Cast the value to another qualified-type.";
 
     let description = [{
         An operation that casts the value to another qualified-type.
     }];
 }
 
-def Tiny_Sin : Tiny_UnaryOp<"sin"> {
+def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
     let summary = "Sine of the value.";
 
     let description = [{
@@ -74,7 +77,7 @@ def Tiny_Sin : Tiny_UnaryOp<"sin"> {
     }];
 }
 
-def Tiny_Sqrt : Tiny_UnaryOp<"sqrt"> {
+def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
     let summary = "Square-root of the value";
 
     let description = [{
@@ -82,7 +85,7 @@ def Tiny_Sqrt : Tiny_UnaryOp<"sqrt"> {
     }];
 }
 
-def Tiny_Neg : Tiny_UnaryOp<"neg"> {
+def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
     let summary = "Negate the value.";
 
     let description = [{
@@ -113,7 +116,11 @@ def Tiny_Neg : Tiny_UnaryOp<"neg"> {
 /* 
 --------------------------------------------------- 
 ------------------ FUNCTION OPS -------------------
---------------------------------------------------- */
+--------------------------------------------------- 
+
+            COPIED FROM THE MLIR REPO
+*/
+
 
 def Tiny_CallOp : Tiny_Op<"call",
     [CallOpInterface, MemRefsNormalizable,
