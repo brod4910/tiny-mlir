@@ -59,14 +59,18 @@ def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterface>, 
-                                      Pure, 
-                                      SameOperandsAndResultShape]> {
+def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterface>,
+                                        /*DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,*/
+                                        Pure,
+                                        SameOperandsAndResultShape]> {
     let summary = "Cast the value to another qualified-type.";
 
     let description = [{
         An operation that casts the value to another qualified-type.
     }];
+
+    let arguments = (ins FloatLike:$value);
+    let results = (outs FloatLike:$output);
 }
 
 def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
