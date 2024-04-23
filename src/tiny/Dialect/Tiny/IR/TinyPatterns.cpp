@@ -5,15 +5,21 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
-#include "tiny/Dialect/Tiny/IR/TinyPatterns.h.inc"
+#include "mlir/Tools/PDLL/CodeGen/MLIRGen.h"
+#include <mlir/IR/MLIRContext.h>
+#include <mlir/IR/PatternMatch.h>
+
+#include "mlir/Parser/Parser.h"
+#include "tiny/Dialect/Tiny/IR/TinyPatterns.inc"
 
 namespace mlir::tiny {
-
 struct EraseNoOp : public PassWrapper<EraseNoOp, OperationPass<>> {
   FrozenRewritePatternSet patterns;
 
   StringRef getArgument() const final { return "tiny-erase-noop"; }
+
   StringRef getDescription() const final { return "Tiny Erase NoOp"; }
+
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<TinyDialect>();
   }
@@ -21,18 +27,16 @@ struct EraseNoOp : public PassWrapper<EraseNoOp, OperationPass<>> {
   LogicalResult initialize(MLIRContext *ctx) override {
     // Build the pattern set within the `initialize` to avoid recompiling PDL
     // patterns during each `runOnOperation` invocation.
-    RewritePatternSet patternList(ctx);
-    populateGeneratedPDLLPatterns(patternList);
-    patterns = std::move(patternList);
+    RewritePatternSet pattern_list(ctx);
+    pattern_list.add<EraseNoOpPattern>(ctx);
+    patterns = std::move(pattern_list);
     return success();
   }
 
   void runOnOperation() final {
-    // Invoke the pattern driver with the provided patterns.
     (void)applyPatternsAndFoldGreedily(getOperation(), patterns);
-  }
+  };
 };
 
 void registerTinyPasses() { PassRegistration<EraseNoOp>(); }
-
 } // namespace mlir::tiny
