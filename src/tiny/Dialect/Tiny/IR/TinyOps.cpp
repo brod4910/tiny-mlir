@@ -1,4 +1,4 @@
-#include "tiny/Dialect/Tiny/TinyOps.h"
+#include "TinyOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"

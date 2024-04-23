@@ -5,7 +5,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
-#include "tiny/Dialect/Tiny/TinyPatterns.h.inc"
+#include "tiny/Dialect/Tiny/IR/TinyPatterns.h.inc"
 
 namespace mlir::tiny {
 
