@@ -1,12 +1,56 @@
-#include "src/tiny/Dialect/Tiny/TinyOps.h"
+#include "TinyOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/FunctionImplementation.h"
 #include "mlir/IR/FunctionInterfaces.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/Interfaces/InferTypeOpInterface.h"
 
 namespace mlir::tiny {
-//-- FuncOp --
+
+/*
+---------------------------------------------------
+------------------- UNARY OPS ---------------------
+--------------------------------------------------- */
+
+/* ------------------ CastOp ------------------- */
+
+bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  if (inputs.size() != 1 || outputs.size() != 1) {
+    return false;
+  }
+
+  TensorType input = llvm::dyn_cast<TensorType>(inputs.front());
+  TensorType output = llvm::dyn_cast<TensorType>(outputs.front());
+
+  if (!input || !output) {
+    return false;
+  }
+
+  // The shape is required to match if both types are ranked.
+  return succeeded(verifyCompatibleShape(input, output));
+}
+
+// static LogicalResult inferReturnTypeComponents(
+//     MLIRContext *context, ::std::optional<Location> location,
+//     ValueShapeRange operands, DictionaryAttr attributes,
+//     OpaqueProperties properties, RegionRange regions,
+//     ::llvm::SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+//   llvm::SmallVector<int64_t> out_shape;
+//   inferredReturnShapes.push_back(ShapedTypeComponents(out_shape));
+// }
+
+/*
+---------------------------------------------------
+------------------ FUNCTION OPS -------------------
+---------------------------------------------------
+
+            COPIED FROM THE MLIR REPO
+*/
+
+/* ------------------ FuncOp ------------------- */
+
 void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
                    FunctionType type, ArrayRef<NamedAttribute> attrs,
                    ArrayRef<DictionaryAttr> argAttrs) {
@@ -41,6 +85,8 @@ void FuncOp::print(OpAsmPrinter &printer) {
       printer, *this, /*isVariadic=*/false, getFunctionTypeAttrName(),
       getArgAttrsAttrName(), getResAttrsAttrName());
 }
+
+/* ------------------ CallOp ------------------- */
 
 LogicalResult CallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
   // Check that the callee attribute was specified.
@@ -77,7 +123,8 @@ LogicalResult CallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
   return success();
 }
 
-// -- ReturnOp --
+/* ------------------ ReturnOp ------------------- */
+
 LogicalResult ReturnOp::verify() {
   auto function = cast<FuncOp>((*this)->getParentOp());
 
@@ -98,4 +145,5 @@ LogicalResult ReturnOp::verify() {
 
   return success();
 }
+
 } // namespace mlir::tiny

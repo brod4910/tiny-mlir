@@ -1,0 +1,27 @@
+#include "mlir/IR/OpBase.td"
+
+// ----------------------------------- 
+// ----------------------------------- 
+// ----------- CONSTRAINTS ----------- 
+// ----------------------------------- 
+// ----------------------------------- 
+
+Constraint HasSameType(value1: Value, value2: Value) [{
+    return mlir::success(value1.getType().cast<mlir::ShapedType>().getElementType() == 
+                  value2.getType().cast<mlir::ShapedType>().getElementType());
+}];
+
+Pattern EraseNoOpPattern {
+  erase op<tiny.noop>;  
+} 
+
+Pattern CastNoOpPattern {
+    let value1: Value;
+    let value2: Value;
+
+    let root = op<tiny.cast>(value1, value2);
+
+    HasSameType(value1, value2);
+
+    replace root with op<tiny.noop>(value1);
+}

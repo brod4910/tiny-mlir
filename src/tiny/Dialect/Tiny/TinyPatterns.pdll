@@ -1,3 +1,0 @@
-Rewrite EraseNoOp(op: Op<tiny.noop>) {
-    erase op;
-}

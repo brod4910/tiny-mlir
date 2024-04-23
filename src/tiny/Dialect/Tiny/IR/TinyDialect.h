@@ -5,4 +5,4 @@
 
 #include "mlir/IR/DialectImplementation.h"
 
-#include "src/tiny/Dialect/Tiny/TinyDialect.h.inc"
+#include "tiny/Dialect/Tiny/IR/TinyDialect.h.inc"
