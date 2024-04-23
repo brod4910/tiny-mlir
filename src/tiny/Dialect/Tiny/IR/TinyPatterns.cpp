@@ -38,5 +38,31 @@ struct EraseNoOp : public PassWrapper<EraseNoOp, OperationPass<>> {
   };
 };
 
-void registerTinyPasses() { PassRegistration<EraseNoOp>(); }
+struct CastNoOp : public PassWrapper<CastNoOp, OperationPass<>> {
+  FrozenRewritePatternSet patterns;
+
+  StringRef getArgument() const final { return "tiny-cast-noop"; }
+
+  StringRef getDescription() const final { return "Tiny Cast NoOp"; }
+
+  void getDependentDialects(DialectRegistry &registry) const override {
+    registry.insert<TinyDialect>();
+  }
+
+  LogicalResult initialize(MLIRContext *ctx) override {
+    RewritePatternSet pattern_list(ctx);
+    pattern_list.add<CastNoOpPattern>(ctx);
+    patterns = std::move(pattern_list);
+    return success();
+  }
+
+  void runOnOperation() final {
+    (void)applyPatternsAndFoldGreedily(getOperation(), patterns);
+  }
+};
+
+void registerTinyPasses() {
+  PassRegistration<EraseNoOp>();
+  PassRegistration<CastNoOp>();
+}
 } // namespace mlir::tiny
