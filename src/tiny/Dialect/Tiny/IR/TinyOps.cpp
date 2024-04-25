@@ -32,15 +32,6 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   return succeeded(verifyCompatibleShape(input, output));
 }
 
-// static LogicalResult inferReturnTypeComponents(
-//     MLIRContext *context, ::std::optional<Location> location,
-//     ValueShapeRange operands, DictionaryAttr attributes,
-//     OpaqueProperties properties, RegionRange regions,
-//     ::llvm::SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-//   llvm::SmallVector<int64_t> out_shape;
-//   inferredReturnShapes.push_back(ShapedTypeComponents(out_shape));
-// }
-
 /*
 ---------------------------------------------------
 ------------------ FUNCTION OPS -------------------

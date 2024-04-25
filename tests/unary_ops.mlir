@@ -1,9 +1,16 @@
-// RUN: tiny-opt %s | FileCheck %s
-tiny.func @simple_noop() -> () {
+// RUN: tiny-opt %s --tiny-erase-noop --tiny-cast-noop | FileCheck %s
+tiny.func @simple_exp2() -> tensor<3xf32> {
+    %0 = arith.constant dense<[1.0, 2.0, 3.0]> : tensor<3xf32>
+    %1 = tiny.exp2 %0 : tensor<3xf32> -> tensor<3xf32>
+    
+    tiny.return %1 : tensor<3xf32>
+}
+
+tiny.func @simple_noop() -> tensor<3xf32> {
     %0 = arith.constant dense<[1.0, 2.0, 3.0]> : tensor<3xf32>
     %1 = tiny.noop %0 : tensor<3xf32> -> tensor<3xf32>
 
-    tiny.return
+    tiny.return %1 : tensor<3xf32>
 }
 
 tiny.func @cast_noop_erase() -> tensor<3xf32> {
