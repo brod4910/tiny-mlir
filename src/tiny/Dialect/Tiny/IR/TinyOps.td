@@ -6,7 +6,6 @@ include "TinyDialect.td"
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
-include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 include "mlir/IR/FunctionInterfaces.td"
@@ -68,9 +67,6 @@ def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterfac
     let description = [{
         An operation that casts the value to another qualified-type.
     }];
-
-    let arguments = (ins FloatLike:$value);
-    let results = (outs FloatLike:$output);
 }
 
 def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {

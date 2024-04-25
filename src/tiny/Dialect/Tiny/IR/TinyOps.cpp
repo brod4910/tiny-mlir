@@ -5,7 +5,6 @@
 #include "mlir/IR/FunctionImplementation.h"
 #include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/TypeUtilities.h"
-#include "mlir/Interfaces/InferTypeOpInterface.h"
 
 namespace mlir::tiny {
 
@@ -31,15 +30,6 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   // The shape is required to match if both types are ranked.
   return succeeded(verifyCompatibleShape(input, output));
 }
-
-// static LogicalResult inferReturnTypeComponents(
-//     MLIRContext *context, ::std::optional<Location> location,
-//     ValueShapeRange operands, DictionaryAttr attributes,
-//     OpaqueProperties properties, RegionRange regions,
-//     ::llvm::SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-//   llvm::SmallVector<int64_t> out_shape;
-//   inferredReturnShapes.push_back(ShapedTypeComponents(out_shape));
-// }
 
 /*
 ---------------------------------------------------
