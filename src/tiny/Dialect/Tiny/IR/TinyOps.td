@@ -1,13 +1,14 @@
 #ifndef TINY_OPS
 #define TINY_OPS
 
-include "TinyDialect.td"
 
+include "TinyDialect.td"
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
+include "mlir/IR/BuiltinAttributes.td"
 include "mlir/IR/FunctionInterfaces.td"
 include "mlir/IR/OpBase.td"
 include "mlir/IR/OpAsmInterface.td"
@@ -20,6 +21,17 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- Traits -----------------------
 --------------------------------------------------- */
 
+/* 
+--------------------------------------------------- 
+-------------------- CONST OP ---------------------
+--------------------------------------------------- */
+
+def Tiny_ConstantOp : Tiny_Op<"constant", [Pure, ConstantLike]> {
+  let arguments = (ins ElementsAttr: $value);
+  let results = (outs AnyTensor: $output);
+
+  let assemblyFormat = "attr-dict $value";
+}
 
 /* 
 --------------------------------------------------- 
