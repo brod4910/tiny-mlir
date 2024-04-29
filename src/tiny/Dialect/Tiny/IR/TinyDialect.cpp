@@ -22,13 +22,12 @@ void TinyDialect::initialize() {
 
 Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
                                             Type type, Location loc) {
-  auto tensor_type = dyn_cast<TensorType>(type);
-  auto const_value = dyn_cast<DenseElementsAttr>(value);
+  auto const_value = dyn_cast<TensorType>(value);
 
-  if (!tensor_type || !const_value) {
+  if (!const_value) {
     return nullptr;
   }
 
-  return builder.create<ConstantOp>(loc, type, const_value);
+  builder.create<ConstantOp>(loc, type, const_value);
 }
 } // namespace mlir::tiny

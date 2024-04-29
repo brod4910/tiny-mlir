@@ -26,11 +26,13 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- CONST OP ---------------------
 --------------------------------------------------- */
 
-def Tiny_ConstantOp : Tiny_Op<"constant", [Pure, ConstantLike]> {
-  let arguments = (ins ElementsAttr: $value);
+def Tiny_ConstantOp : Tiny_Op<"constant", [Pure, 
+                                          ConstantLike, 
+                                          AllTypesMatch<["value", "output"]>]> {
+  let arguments = (ins AnyTensor: $value);
   let results = (outs AnyTensor: $output);
 
-  let assemblyFormat = "attr-dict $value";
+  let assemblyFormat = "attr-dict $value `:` type($output)";
 }
 
 /* 
