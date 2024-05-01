@@ -3,6 +3,8 @@
 
 
 include "TinyDialect.td"
+include "TinyTypes.td"
+
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -27,12 +29,20 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- */
 
 def Tiny_ConstantOp : Tiny_Op<"constant", [Pure, 
-                                          ConstantLike, 
-                                          AllTypesMatch<["value", "output"]>]> {
-  let arguments = (ins AnyTensor: $value);
-  let results = (outs AnyTensor: $output);
+                                          ConstantLike]> {
+  let arguments = (ins TypedAttrInterface: $value);
+  let results = (outs TinyTensor: $output);
 
+  let extraClassDeclaration = [{
+    static bool verifyWith(Attribute value, Type type);
+
+    static ConstantOp materialize(OpBuilder &builder, Attribute value, 
+                                  Type type, Location loc);
+  }];
+
+  let hasFolder = 1;
   let assemblyFormat = "attr-dict $value `:` type($output)";
+  let hasVerifier = 1;
 }
 
 /* 
@@ -42,7 +52,6 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [Pure,
 
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
     let arguments = (ins AnyTensor:$value);
-
     let results = (outs AnyTensor:$output);
 
     let assemblyFormat = "$value attr-dict `:` type($value) `->` type($output)";

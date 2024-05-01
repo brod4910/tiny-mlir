@@ -8,12 +8,19 @@
 #include "llvm/ADT/TypeSwitch.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.cpp.inc"
+#define GET_TYPEDEF_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyTypes.cpp.inc"
+
 #define GET_OP_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
 namespace mlir::tiny {
 
 void TinyDialect::initialize() {
+  addTypes<
+#define GET_TYPEDEF_LIST
+#include "tiny/Dialect/Tiny/IR/TinyTypes.cpp.inc"
+      >();
   addOperations<
 #define GET_OP_LIST
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
@@ -22,12 +29,6 @@ void TinyDialect::initialize() {
 
 Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
                                             Type type, Location loc) {
-  auto const_value = dyn_cast<TensorType>(value);
-
-  if (!const_value) {
-    return nullptr;
-  }
-
-  builder.create<ConstantOp>(loc, type, const_value);
+  return ConstantOp::materialize(builder, value, type, loc);
 }
 } // namespace mlir::tiny

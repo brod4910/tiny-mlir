@@ -7,6 +7,33 @@
 #include "mlir/IR/TypeUtilities.h"
 
 namespace mlir::tiny {
+/*
+---------------------------------------------------
+------------------- CONSTANT OP -------------------
+--------------------------------------------------- */
+LogicalResult ConstantOp::verify() {
+  // auto type = getType();
+
+  // if (getValue().getType() != type) {
+  //   return emitOpError() << "value type" << getValue().getType()
+  //                        << " must match return type: "
+  //                        << "type";
+  // }
+
+  return success();
+}
+
+bool ConstantOp::verifyWith(Attribute value, Type type) { return true; }
+
+ConstantOp ConstantOp::materialize(OpBuilder &builder, Attribute value,
+                                   Type type, Location loc) {
+  if (verifyWith(value, type)) {
+  }
+
+  return nullptr;
+}
+
+OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
 
 /*
 ---------------------------------------------------
