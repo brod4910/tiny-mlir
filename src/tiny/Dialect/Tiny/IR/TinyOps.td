@@ -28,10 +28,11 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- CONST OP ---------------------
 --------------------------------------------------- */
 
-def Tiny_ConstantOp : Tiny_Op<"constant", [Pure, 
-                                          ConstantLike]> {
+def Tiny_ConstantOp : Tiny_Op<"constant", [Pure,
+                                           AllTypesMatch<["value", "output"]>, 
+                                           ConstantLike]> {
   let arguments = (ins TypedAttrInterface: $value);
-  let results = (outs TinyTensor: $output);
+  let results = (outs Tiny_Tensor: $output);
 
   let extraClassDeclaration = [{
     static bool verifyWith(Attribute value, Type type);
@@ -41,7 +42,7 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [Pure,
   }];
 
   let hasFolder = 1;
-  let assemblyFormat = "attr-dict $value `:` type($output)";
+  let assemblyFormat = "attr-dict $value";
   let hasVerifier = 1;
 }
 
@@ -51,8 +52,8 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [Pure,
 --------------------------------------------------- */
 
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
-    let arguments = (ins AnyTensor:$value);
-    let results = (outs AnyTensor:$output);
+    let arguments = (ins Tiny_Tensor:$value);
+    let results = (outs Tiny_Tensor:$output);
 
     let assemblyFormat = "$value attr-dict `:` type($value) `->` type($output)";
 }

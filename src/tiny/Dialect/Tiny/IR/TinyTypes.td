@@ -6,7 +6,7 @@ include "TinyDialect.td"
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
-
+include "mlir/IR/OpBase.td"
 /* 
 --------------------------------------------------- 
 -------------------- Types -----------------------
@@ -18,20 +18,10 @@ class Tiny_Type<string name, list<Trait> traits = [],
     let mnemonic = ?;
 }
 
-class Tiny_Tensor : Tiny_Type<"TinyTensor", [ShapedTypeInterface], "TensorType"> {
-    let summary = "A tensor with int or float-like values.";
+def Tiny_Float : AnyTypeOf<[BF16, F16, F32, F64]>;
 
-    let description = [{
-        A type for tensor-like objects.
-    }];
+def Tiny_Int : AnyTypeOf<[I1, I8, I16, I32, I64]>;
 
-    let parameters = (ins
-     ArrayRefParameter<"int64_t">:$shape,
-     "Type":$elementType,
-     "Attribute":$encoding
-    );
-}
-
-
+def Tiny_Tensor : RankedTensorOf<[Tiny_Int, Tiny_Float]>;
 
 #endif // TINY_TYPES

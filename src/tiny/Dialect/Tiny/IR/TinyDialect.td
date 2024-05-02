@@ -43,7 +43,7 @@ def Tiny_Dialect : Dialect {
     
     let hasConstantMaterializer = 1;
 
-    let useDefaultTypePrinterParser = 1;
+    // let useDefaultTypePrinterParser = 1;
 }
 
 include "TinyTypes.td"

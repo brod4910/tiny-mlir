@@ -47,8 +47,8 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
     return false;
   }
 
-  TensorType input = llvm::dyn_cast<TensorType>(inputs.front());
-  TensorType output = llvm::dyn_cast<TensorType>(outputs.front());
+  auto input = llvm::dyn_cast<TensorType>(inputs.front());
+  auto output = llvm::dyn_cast<TensorType>(outputs.front());
 
   if (!input || !output) {
     return false;
