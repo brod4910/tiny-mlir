@@ -6,22 +6,14 @@
 #include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/TypeUtilities.h"
 
+#include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
+
 namespace mlir::tiny {
 /*
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------
 --------------------------------------------------- */
-LogicalResult ConstantOp::verify() {
-  // auto type = getType();
-
-  // if (getValue().getType() != type) {
-  //   return emitOpError() << "value type" << getValue().getType()
-  //                        << " must match return type: "
-  //                        << "type";
-  // }
-
-  return success();
-}
+LogicalResult ConstantOp::verify() { return success(); }
 
 bool ConstantOp::verifyWith(Attribute value, Type type) { return true; }
 
@@ -34,6 +26,15 @@ ConstantOp ConstantOp::materialize(OpBuilder &builder, Attribute value,
 }
 
 OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
+
+void ConstantOpFloat::build(OpBuilder &builder, OperationState &result,
+                            APFloat value, Type type) {}
+
+void ConstantOpInt::build(OpBuilder &builder, OperationState &result,
+                          int64_t value, unsigned width) {}
+
+void ConstantOpInt::build(OpBuilder &builder, OperationState &result,
+                          int64_t value, Type type) {}
 
 /*
 ---------------------------------------------------
