@@ -16,7 +16,7 @@ from lit.llvm.subst import FindTool, ToolSubst
 # name: The name of this test suite
 config.name = 'TINY'
 
-config.test_format = lit.formats.ShTest(not llvm_config.use_lit_shell)
+config.test_format = lit.formats.ShTest(True)
 
 # suffixes: A list of file extensions to treat as test files.
 config.suffixes = ['.mlir', '.ll']
@@ -44,22 +44,20 @@ config.test_source_root = os.path.dirname(__file__)
 
 # test_exec_root: The root path where tests should be run.
 config.test_exec_root = os.path.join(config.tiny_obj_root, 'test')
-config.tiny_tools_dir = os.path.join(config.tiny_obj_root, 'bin')
-config.filecheck_dir = os.path.join(config.tiny_obj_root, 'bin', 'FileCheck')
+config.tiny_tools_dir = os.path.join(config.tiny_obj_root, 'build/tools')
 
 # FileCheck -enable-var-scope is enabled by default in MLIR test
 # This option avoids to accidentally reuse variable across -LABEL match,
 # it can be explicitly opted-in by prefixing the variable name with $
 config.environment["FILECHECK_OPTS"] = "--enable-var-scope"
 
-tool_dirs = [config.tiny_tools_dir, config.llvm_tools_dir, config.filecheck_dir]
+tool_dirs = [config.tiny_tools_dir, config.llvm_tools_dir]
 
 # Tweak the PATH to include the tools dir.
 for d in tool_dirs:
     llvm_config.with_environment('PATH', d, append_path=True)
 tools = [
     'tiny-opt',
-    # 'tiny-llvm-opt',
     ToolSubst('%PYTHON', config.python_executable, unresolved='ignore'),
 ]
 
