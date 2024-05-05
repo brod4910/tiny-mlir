@@ -8,33 +8,61 @@
 
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
+#include "iostream"
+#include <optional>
+
 namespace mlir::tiny {
 /*
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------
 --------------------------------------------------- */
-LogicalResult ConstantOp::verify() { return success(); }
+LogicalResult ConstantOp::verify() {
+  return failure();
+  // return success(verifyWith(getValue(), getType()));
+}
 
-bool ConstantOp::verifyWith(Attribute value, Type type) { return true; }
+bool ConstantOp::verifyWith(Attribute value, Type type) {
+  auto typedAttr = dyn_cast<TypedAttr>(value);
+
+  if (!typedAttr || typedAttr.getType() != type) {
+    return false;
+  }
+
+  if (llvm::isa<IntegerType>(type) &&
+      !llvm::cast<IntegerType>(type).isSignless()) {
+    return false;
+  }
+
+  return llvm::isa<IntegerAttr, FloatAttr, ElementsAttr>(value);
+}
+
+// void ConstantOp::build(OpBuilder &builder, OperationState &state, APFloat
+// value,
+//                        FloatType type) {
+//   auto dataType = RankedTensorType::get({}, type);
+//   auto dataAttribute = DenseElementsAttr::get(dataType, value);
+
+//   ConstantOp::build(builder, state, dataType, dataAttribute);
+// }
+
+void ConstantOp::build(OpBuilder &builder, OperationState &state, APFloat value,
+                       TypedAttr type) {
+  auto dataType = RankedTensorType::get({}, type.getType());
+  auto dataAttribute = DenseElementsAttr::get(dataType, value);
+
+  ConstantOp::build(builder, state, dataType, dataAttribute);
+}
 
 ConstantOp ConstantOp::materialize(OpBuilder &builder, Attribute value,
                                    Type type, Location loc) {
   if (verifyWith(value, type)) {
+    return builder.create<ConstantOp>(loc, type, cast<TypedAttr>(value));
   }
 
   return nullptr;
 }
 
 OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
-
-void ConstantOpFloat::build(OpBuilder &builder, OperationState &result,
-                            APFloat value, Type type) {}
-
-void ConstantOpInt::build(OpBuilder &builder, OperationState &result,
-                          int64_t value, unsigned width) {}
-
-void ConstantOpInt::build(OpBuilder &builder, OperationState &result,
-                          int64_t value, Type type) {}
 
 /*
 ---------------------------------------------------
