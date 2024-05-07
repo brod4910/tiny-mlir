@@ -6,7 +6,65 @@
 #include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/TypeUtilities.h"
 
+#include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
+
+#include "iostream"
+#include <optional>
+
 namespace mlir::tiny {
+/*
+---------------------------------------------------
+------------------- CONSTANT OP -------------------
+--------------------------------------------------- */
+bool ConstantOp::verifyWith(Attribute value, Type type) {
+  auto rankedType = dyn_cast<RankedTensorType>(type);
+
+  if (!rankedType) {
+    return false;
+  }
+
+  if (llvm::isa<IntegerType>(rankedType) &&
+      !llvm::cast<IntegerType>(type).isSignless()) {
+    return false;
+  }
+
+  if (!llvm::isa<DenseIntOrFPElementsAttr>(value)) {
+    return false;
+  }
+
+  return true;
+}
+
+ConstantOp ConstantOp::materialize(OpBuilder &builder, Attribute value,
+                                   Type type, Location loc) {
+  if (verifyWith(value, type)) {
+    return builder.create<ConstantOp>(loc, type, cast<ElementsAttr>(value));
+  }
+
+  return nullptr;
+}
+
+LogicalResult ConstantOp::verify() {
+  auto type = dyn_cast<RankedTensorType>(getType());
+
+  if (!type) {
+    return emitOpError("value must be ranked tensor.");
+  }
+
+  if (llvm::isa<IntegerType>(type) &&
+      !llvm::cast<IntegerType>(type).isSignless()) {
+    return emitOpError("integer return type must be signless.");
+  }
+
+  if (!llvm::isa<DenseIntOrFPElementsAttr>(getValue())) {
+    return emitOpError(
+        "value must be integer or floating-point elements attributes.");
+  }
+
+  return success();
+}
+
+OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
 
 /*
 ---------------------------------------------------
@@ -20,8 +78,8 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
     return false;
   }
 
-  TensorType input = llvm::dyn_cast<TensorType>(inputs.front());
-  TensorType output = llvm::dyn_cast<TensorType>(outputs.front());
+  auto input = llvm::dyn_cast<TensorType>(inputs.front());
+  auto output = llvm::dyn_cast<TensorType>(outputs.front());
 
   if (!input || !output) {
     return false;

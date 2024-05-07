@@ -36,13 +36,17 @@ def Tiny_Dialect : Dialect {
     }];
 
     let dependentDialects = [
-        "arith::ArithDialect",
         "math::MathDialect",
     ];
 
     let cppNamespace = "::mlir::tiny";
     
-    // let hasConstantMaterializer = 1;
-    // let hasCanonicalizer = 1;
+    let hasConstantMaterializer = 1;
+
+    let usePropertiesForAttributes = 1;
+    // let useDefaultTypePrinterParser = 1;
 }
+
+include "TinyTypes.td"
+
 #endif // TINY_DIALECT
