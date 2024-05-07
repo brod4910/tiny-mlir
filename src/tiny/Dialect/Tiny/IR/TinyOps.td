@@ -30,8 +30,8 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- CONST OP ---------------------
 --------------------------------------------------- */
 
-def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllElementTypesMatch<["value", "result"]>]> {
-  let arguments = (ins TypedAttrInterface: $value);
+def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value", "result"]>]> {
+  let arguments = (ins ElementsAttrInterface: $value);
   let results = (outs Tiny_Tensor: $result);
 
   let extraClassDeclaration = [{
@@ -40,10 +40,6 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllElementTypesMa
     static ConstantOp materialize(OpBuilder &builder, Attribute value, 
                                   Type type, Location loc);
   }];
-
-  let builders = [
-    OpBuilder<(ins "APFloat":$value, "TypedAttr":$type)>,
-  ];
 
   let hasFolder = 1;
   let assemblyFormat = "attr-dict $value";

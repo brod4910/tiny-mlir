@@ -1,10 +1,10 @@
 // RUN: tiny-opt %s | FileCheck %s
 
-// CHECK-LABEL: @simple_constant
-tiny.func @simple_constant() -> tensor<1xf32> {
-    %0 = tiny.constant dense<[1.0]> : tensor<1xf32>
+// CHECK-LABEL: @simple_bool_constant
+tiny.func @simple_bool_constant() -> tensor<i1> {
+    %0 = tiny.constant dense<true> : tensor<i1>
 
-    tiny.return %0 : tensor<1xf32>
+    tiny.return %0 : tensor<i1>
 }
 
 // CHECK-LABEL: @simple_tensor_constant

@@ -16,50 +16,52 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------
 --------------------------------------------------- */
-LogicalResult ConstantOp::verify() {
-  return failure();
-  // return success(verifyWith(getValue(), getType()));
-}
-
 bool ConstantOp::verifyWith(Attribute value, Type type) {
-  auto typedAttr = dyn_cast<TypedAttr>(value);
+  auto rankedType = dyn_cast<RankedTensorType>(type);
 
-  if (!typedAttr || typedAttr.getType() != type) {
+  if (!rankedType) {
     return false;
   }
 
-  if (llvm::isa<IntegerType>(type) &&
+  if (llvm::isa<IntegerType>(rankedType) &&
       !llvm::cast<IntegerType>(type).isSignless()) {
     return false;
   }
 
-  return llvm::isa<IntegerAttr, FloatAttr, ElementsAttr>(value);
-}
+  if (!llvm::isa<DenseIntOrFPElementsAttr>(value)) {
+    return false;
+  }
 
-// void ConstantOp::build(OpBuilder &builder, OperationState &state, APFloat
-// value,
-//                        FloatType type) {
-//   auto dataType = RankedTensorType::get({}, type);
-//   auto dataAttribute = DenseElementsAttr::get(dataType, value);
-
-//   ConstantOp::build(builder, state, dataType, dataAttribute);
-// }
-
-void ConstantOp::build(OpBuilder &builder, OperationState &state, APFloat value,
-                       TypedAttr type) {
-  auto dataType = RankedTensorType::get({}, type.getType());
-  auto dataAttribute = DenseElementsAttr::get(dataType, value);
-
-  ConstantOp::build(builder, state, dataType, dataAttribute);
+  return true;
 }
 
 ConstantOp ConstantOp::materialize(OpBuilder &builder, Attribute value,
                                    Type type, Location loc) {
   if (verifyWith(value, type)) {
-    return builder.create<ConstantOp>(loc, type, cast<TypedAttr>(value));
+    return builder.create<ConstantOp>(loc, type, cast<ElementsAttr>(value));
   }
 
   return nullptr;
+}
+
+LogicalResult ConstantOp::verify() {
+  auto type = dyn_cast<RankedTensorType>(getType());
+
+  if (!type) {
+    return emitOpError("value must be ranked tensor.");
+  }
+
+  if (llvm::isa<IntegerType>(type) &&
+      !llvm::cast<IntegerType>(type).isSignless()) {
+    return emitOpError("integer return type must be signless.");
+  }
+
+  if (!llvm::isa<DenseIntOrFPElementsAttr>(getValue())) {
+    return emitOpError(
+        "value must be integer or floating-point elements attributes.");
+  }
+
+  return success();
 }
 
 OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
