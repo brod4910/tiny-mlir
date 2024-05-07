@@ -1,17 +1,22 @@
 #ifndef TINY_OPS
 #define TINY_OPS
 
+
 include "TinyDialect.td"
+include "TinyTypes.td"
 
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
+include "mlir/IR/BuiltinAttributes.td"
 include "mlir/IR/FunctionInterfaces.td"
 include "mlir/IR/OpBase.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/SymbolInterfaces.td"
+
 
 class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnemonic, traits>;
 
@@ -20,6 +25,26 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- Traits -----------------------
 --------------------------------------------------- */
 
+/* 
+--------------------------------------------------- 
+-------------------- CONST OP ---------------------
+--------------------------------------------------- */
+
+def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value", "result"]>]> {
+  let arguments = (ins ElementsAttrInterface: $value);
+  let results = (outs Tiny_Tensor: $result);
+
+  let extraClassDeclaration = [{
+    static bool verifyWith(Attribute value, Type type);
+
+    static ConstantOp materialize(OpBuilder &builder, Attribute value, 
+                                  Type type, Location loc);
+  }];
+
+  let hasFolder = 1;
+  let assemblyFormat = "attr-dict $value";
+  let hasVerifier = 1;
+}
 
 /* 
 --------------------------------------------------- 
@@ -27,11 +52,10 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- */
 
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
-    let arguments = (ins AnyTensor:$value);
+    let arguments = (ins Tiny_Tensor:$value);
+    let results = (outs Tiny_Tensor:$result);
 
-    let results = (outs AnyTensor:$output);
-
-    let assemblyFormat = "$value attr-dict `:` type($value) `->` type($output)";
+    let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
 }
 
 def Tiny_NoOp : Tiny_UnaryOp<"noop"> {

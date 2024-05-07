@@ -6,3 +6,6 @@
 #include "mlir/IR/DialectImplementation.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h.inc"
+
+#define GET_OP_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyOps.h.inc"
