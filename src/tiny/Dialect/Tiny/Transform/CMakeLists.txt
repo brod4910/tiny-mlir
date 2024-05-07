@@ -1,6 +1,12 @@
-set(LLVM_TARGET_DEFINITIONS Passes.td)
-mlir_tablegen(Passes.h.inc -gen-pass-decls -name TinyOpt)
-add_public_tablegen_target(MLIRTinyPassIncGen)
-add_dependencies(mlir-headers MLIRTinyPassIncGen)
+add_mlir_pdll_library(MLIRTinyIncPasses Passes.pdll Passes.inc EXTRA_INCLUDES
+                      ${MLIR_INCLUDE_DIR})
 
-add_mlir_doc(Passes TinyPasses ./ -gen-pass-doc)
+
+add_mlir_dialect_library(MLIRTinyPasses
+    Passes.cpp
+    
+    ADDITIONAL_HEADER_DIRS
+    ${PROJECT_SOURCE_DIR}/src
+    
+    LINK_LIBS PUBLIC
+    )

@@ -1,4 +1,4 @@
-// RUN: tiny-opt %s --tiny-erase-noop --tiny-cast-noop | FileCheck %s
+// RUN: tiny-opt %s --tiny-remove-redundant | FileCheck %s
 
 tiny.func @simple_noop() -> tensor<3xf32> {
     // CHECK: tiny.constant

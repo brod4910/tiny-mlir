@@ -1,6 +1,3 @@
-add_mlir_pdll_library(MLIRTinyPatterns TinyPatterns.pdll TinyPatterns.inc EXTRA_INCLUDES
-                      ${MLIR_INCLUDE_DIR})
-
 set(LLVM_TARGET_DEFINITIONS TinyOps.td)
 mlir_tablegen(TinyOps.h.inc -gen-op-decls)
 mlir_tablegen(TinyOps.cpp.inc -gen-op-defs)
@@ -16,13 +13,9 @@ add_mlir_doc(TinyDialect TinyDialect Tiny/ -gen-dialect-doc)
 add_mlir_dialect_library(MLIRTiny
     TinyDialect.cpp
     TinyOps.cpp
-    TinyPatterns.cpp
     
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/src
-
-    DEPENDS
-    MLIRTinyPatterns
     
     LINK_LIBS PUBLIC
     )
