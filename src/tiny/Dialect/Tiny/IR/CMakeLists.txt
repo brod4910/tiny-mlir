@@ -16,6 +16,4 @@ add_tiny_library(MLIRTiny
 
     DEPENDS
     TinyIRIncGen
-    
-    LINK_LIBS PUBLIC
-    )
+)

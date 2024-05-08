@@ -7,7 +7,7 @@ set (LIBS
     MLIROptLib
     MLIRTiny
     MLIRTinyTransforms
-    MLIRAccl
+    MLIRTinyAccl
     MLIRPass
     MLIRTransforms
 )

@@ -6,15 +6,13 @@ add_dependencies(mlir-headers AcclIRIncGen)
 
 add_mlir_doc(AcclDialect AcclDialect Accelerator/ -gen-dialect-doc)
 
-add_mlir_dialect_library(MLIRAccl
+add_tiny_library(MLIRTinyAccl
     AcclDialect.cpp
-    
-    ADDITIONAL_HEADER_DIRS
-    ${PROJECT_SOURCE_DIR}/src
 
     DEPENDS
-    MLIRTiny
-    MLIRSCFDialect
+    AcclIRIncGen
     
     LINK_LIBS PUBLIC
+    MLIRTiny
+    MLIRSCFDialect
     )
