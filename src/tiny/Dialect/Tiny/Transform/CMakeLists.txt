@@ -1,12 +1,13 @@
-add_mlir_pdll_library(MLIRTinyIncPasses Passes.pdll Passes.inc EXTRA_INCLUDES
+add_mlir_pdll_library(MLIRTinyIncTransforms Passes.pdll Passes.inc EXTRA_INCLUDES
                       ${MLIR_INCLUDE_DIR})
 
 
-add_mlir_dialect_library(MLIRTinyPasses
+add_tiny_library(MLIRTinyTransforms
     Passes.cpp
-    
-    ADDITIONAL_HEADER_DIRS
-    ${PROJECT_SOURCE_DIR}/src
+
+    DEPENDS
+    MLIRTinyIncTransforms
     
     LINK_LIBS PUBLIC
+    MLIRTiny
     )

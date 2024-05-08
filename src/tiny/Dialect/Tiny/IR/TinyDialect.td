@@ -13,7 +13,11 @@ def Tiny_Dialect : Dialect {
   // The description of the dialect.
   let description = [{
         An MLIR modeled after the tinygrad repo. The layout of operations/specs/functionality 
-        will be similar to tinygrad or model it closely. 
+        will be similar to tinygrad or model it closely.
+
+        It should be noted that this dialect performs basic - high level optimizations on operations.
+        For mid-level optimizations, the Tiny dialect gets lowered to the Accelerator dialect.
+
         Taken from the repo:
 
         Low-Level Ops (LLOps):
@@ -35,9 +39,7 @@ def Tiny_Dialect : Dialect {
             These are the syntax sugar. They are built on top of the mlops and support most of the things that you could expect from a tensor library.
     }];
 
-    let dependentDialects = [
-        "math::MathDialect",
-    ];
+    let dependentDialects = [];
 
     let cppNamespace = "::mlir::tiny";
     

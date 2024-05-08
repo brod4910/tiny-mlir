@@ -24,15 +24,42 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 
-include(AddLLVM)
 include(TableGen)
+include(AddLLVM)
+
+
+# Utilities
+function(add_tiny_object name)
+  cmake_parse_arguments(ARG "" "" "DEPENDS;LINK_LIBS" ${ARGN})
+  add_library(${name} OBJECT)
+  target_sources(${name}
+    PRIVATE ${ARG_UNPARSED_ARGUMENTS}
+    INTERFACE $<TARGET_OBJECTS:${name}>
+  )
+
+
+  # add_library(${name} OBJECT ${ARG_UNPARSED_ARGUMENTS})
+  if(ARG_DEPENDS)
+    add_dependencies(${name} ${ARG_DEPENDS})
+  endif()
+  if(ARG_LINK_LIBS)
+    target_link_libraries(${name} PUBLIC ${ARG_LINK_LIBS})
+  endif()
+endfunction()
+
+set_property(GLOBAL PROPERTY TINY_LIBS "")
+function(add_tiny_library name)
+  set_property(GLOBAL APPEND PROPERTY TINY_LIBS ${name})
+  add_tiny_object(${name} ${ARGN})
+  llvm_update_compile_flags(${name})
+endfunction()
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 include(AddMLIR)
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_BINARY_DIR}/src)
+include_directories(${PROJECT_BINARY_DIR}/src) # Tablegen'd files
 
 # LDFLAGS
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++")

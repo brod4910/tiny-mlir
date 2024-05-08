@@ -9,8 +9,6 @@
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
-  // registry.insert<mlir::tiny::TinyDialect, mlir::arith::ArithDialect,
-  //                 mlir::math::MathDialect>();
   mlir::registerAllDialects(registry);
   registry.insert<mlir::tiny::TinyDialect>();
 

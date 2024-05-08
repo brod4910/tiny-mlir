@@ -6,7 +6,8 @@ set (LIBS
     ${conversion_libs}
     MLIROptLib
     MLIRTiny
-    MLIRTinyPasses
+    MLIRTinyTransforms
+    MLIRAccl
     MLIRPass
     MLIRTransforms
 )
