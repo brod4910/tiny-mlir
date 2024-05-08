@@ -5,7 +5,7 @@
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
-#include "tiny/Dialect/Tiny/IR/TinyPatterns.h"
+#include "tiny/Dialect/Tiny/Transform/Passes.h"
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
