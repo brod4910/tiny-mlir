@@ -21,7 +21,7 @@ def Accl_Dialect : Dialect {
         "scf::SCFDialect",
     ];
 
-    let cppNamespace = "::mlir::accl";
+    let cppNamespace = "::mlir::tiny::accl";
 
     let hasConstantMaterializer = 1;
 

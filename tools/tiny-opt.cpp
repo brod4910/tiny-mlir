@@ -4,13 +4,15 @@
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
 
+#include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
-  mlir::registerAllDialects(registry);
   registry.insert<mlir::tiny::TinyDialect>();
+  registry.insert<mlir::tiny::accl::AcclDialect>();
+  mlir::registerAllDialects(registry);
 
   mlir::registerAllPasses();
   mlir::tiny::registerTinyPasses();
