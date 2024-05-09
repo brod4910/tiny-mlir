@@ -1,6 +1,8 @@
 set(LLVM_TARGET_DEFINITIONS AcclDialect.td)
 mlir_tablegen(AcclDialect.h.inc -gen-dialect-decls -dialect=accl)
 mlir_tablegen(AcclDialect.cpp.inc -gen-dialect-defs -dialect=accl)
+mlir_tablegen(AcclAttrs.h.inc -gen-attrdef-decls)
+mlir_tablegen(AcclAttrs.cpp.inc -gen-attrdef-defs)
 add_public_tablegen_target(AcclIRIncGen)
 add_dependencies(mlir-headers AcclIRIncGen)
 
