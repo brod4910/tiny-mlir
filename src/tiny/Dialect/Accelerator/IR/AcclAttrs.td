@@ -1,5 +1,7 @@
 #ifndef ACCL_ATTRS
 #define ACCL_ATTRS
+include "TinyTypes.td"
+
 include "AcclDialect.td"
 
 include "mlir/IR/AttrTypeBase.td"
@@ -13,7 +15,15 @@ class Accl_Attr<string name, string attrMnemonic, list<Trait> traits = []>
 
 
 def TensorCoreEncodingAttr : Accl_Attr<"TensorCore", "tensor_core"> {
-    let parameters = (ins "unsigned":$MDim, "unsigned":$NDim, "unsigned":$KDim);
+    let parameters = (ins "unsigned":$MDim, 
+                          "unsigned":$NDim, 
+                          "unsigned":$KDim, 
+                          "Type":$DtypeIn, 
+                          "Type":$DtypeOut);
+
+
+
+    let hasCustomAssemblyFormat = 1;
 }
 
 #endif // ACCL_ATTRS
