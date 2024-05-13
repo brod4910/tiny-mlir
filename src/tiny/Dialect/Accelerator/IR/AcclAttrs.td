@@ -11,17 +11,18 @@ class Accl_Attr<string name, string attrMnemonic, list<Trait> traits = []>
     let description = [{}];
 
     let attrName = "tiny.accl." # attrMnemonic;
-  }
+}
 
+// def CTAInfoAttr : Accl_Attr<"CTAInfoAttr", "cta_info"> {
+//   let parameters = (ins)
+// }
 
 def TensorCoreEncodingAttr : Accl_Attr<"TensorCore", "tensor_core"> {
-    let parameters = (ins "unsigned":$MDim, 
-                          "unsigned":$NDim, 
-                          "unsigned":$KDim, 
+    let parameters = (ins "unsigned":$MDim,
+                          "unsigned":$NDim,
+                          "unsigned":$KDim,
                           "Type":$DtypeIn, 
                           "Type":$DtypeOut);
-
-
 
     let hasCustomAssemblyFormat = 1;
 }
