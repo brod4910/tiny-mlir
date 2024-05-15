@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+
 namespace mlir {
 namespace tiny {
 class ModuleOp;

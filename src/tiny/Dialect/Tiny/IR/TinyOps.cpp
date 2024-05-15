@@ -9,6 +9,7 @@
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
 #include "iostream"
+#include <memory>
 #include <optional>
 
 namespace mlir::tiny {
@@ -17,7 +18,7 @@ namespace mlir::tiny {
 ------------------- CONSTANT OP -------------------
 --------------------------------------------------- */
 bool ConstantOp::verifyWith(Attribute value, Type type) {
-  auto rankedType = dyn_cast<RankedTensorType>(type);
+  auto rankedType = llvm::dyn_cast<RankedTensorType>(type);
 
   if (!rankedType) {
     return false;
@@ -38,14 +39,15 @@ bool ConstantOp::verifyWith(Attribute value, Type type) {
 ConstantOp ConstantOp::materialize(OpBuilder &builder, Attribute value,
                                    Type type, Location loc) {
   if (verifyWith(value, type)) {
-    return builder.create<ConstantOp>(loc, type, cast<ElementsAttr>(value));
+    return builder.create<ConstantOp>(loc, type,
+                                      llvm::cast<ElementsAttr>(value));
   }
 
   return nullptr;
 }
 
 LogicalResult ConstantOp::verify() {
-  auto type = dyn_cast<RankedTensorType>(getType());
+  auto type = llvm::dyn_cast<RankedTensorType>(getType());
 
   if (!type) {
     return emitOpError("value must be ranked tensor.");
