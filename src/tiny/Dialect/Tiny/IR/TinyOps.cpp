@@ -8,8 +8,6 @@
 
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
-#include "iostream"
-#include <memory>
 #include <optional>
 
 namespace mlir::tiny {
