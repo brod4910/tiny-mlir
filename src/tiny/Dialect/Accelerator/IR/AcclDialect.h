@@ -18,7 +18,7 @@ A default CTA Layout is one where each thread handles a single item
 in a Tensor.
 */
 CTALayoutAttr getDefaultCTALayout(MLIRContext *context, ArrayRef<int64_t> shape,
-                                  int numWarps, int threadsPerWarp);
+                                  int numWarps = 16, int threadsPerWarp = 256);
 
 /*
 Gets the default MMA Encoding for a particular MMA op.

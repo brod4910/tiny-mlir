@@ -3,6 +3,9 @@
 
 #include "tiny/Dialect/Accelerator/IR/AcclAttrs.cpp.inc"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.cpp.inc"
+#include <algorithm>
+#include <cstdint>
+#include <numeric>
 
 namespace mlir::tiny::accl {
 void AcclDialect::initialize() {}
@@ -12,13 +15,19 @@ Operation *AcclDialect::materializeConstant(OpBuilder &builder, Attribute value,
   return tiny::ConstantOp::materialize(builder, value, type, loc);
 }
 
-CTALayoutAttr getDefaultCTALayout(MLIRContext *context, ArrayRef<int64_t> shape,
-                                  int numWarps, int threadsPerWarp) {
+int ceil_div(int a, int b) { return (a + b - 1) / b; }
+
+CTALayoutAttr getDefaultCTALayout(MLIRContext *context,
+                                  ArrayRef<int64_t> shape) {
   int rank = shape.size();
-  auto thread_block_tile = ThreadBlockTileAttr::get(context, 1, 1, 1);
-  auto warp_tile = WarpTileAttr::get(context, 1, 1, 1);
-  auto thread_tile = ThreadTileAttr::get(context, 1, 1, 1);
-  return CTALayoutAttr::get(context, thread_block_tile, warp_tile, thread_tile)
+  constexpr uint64_t threadsPerWarp = 256;
+  uint64_t numel = std::accumulate(shape.begin(), shape.end(), 0);
+
+  uint64_t numWarps = ceil_div(numel, threadsPerWarp);
+  auto threadBlockTile = ThreadBlockTileAttr::get(context, 1, 1, 1);
+  auto warpTile = WarpTileAttr::get(context, numWarps, 1, 1);
+  auto threadTile = ThreadTileAttr::get(context, threadsPerWarp, 1, 1);
+  return CTALayoutAttr::get(context, threadBlockTile, warpTile, threadTile);
 }
 
 Attribute getDefaultMMAEncoding(MLIRContext *context, int numWarps,
