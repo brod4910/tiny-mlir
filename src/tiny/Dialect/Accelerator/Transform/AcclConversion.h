@@ -16,4 +16,10 @@ private:
   int numWarps;
   int threadsPerWarp;
 };
+
+class AcclConversionTarget : public ConversionTarget {
+public:
+  explicit AcclConversionTarget(MLIRContext &ctx,
+                                AcclTypeConverter &typeConverter);
+};
 } // namespace mlir

@@ -4,6 +4,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
+#include <memory>
 
 #define GEN_PASS_DECL_CONVERTTINYTOACCL
 #define GEN_PASS_DEF_CONVERTTINYTOACCL
@@ -26,6 +27,8 @@ struct PassThroughUnaryPattern : public OpConversionPattern<Op> {
   LogicalResult matchAndRewrite(Op op, typename Op::Adaptor adaptor,
                                 ConversionPatternRewriter &rewriter) {
     auto resultType = op->getResult()->getType();
+
+    // Ranked tensors types are strictly only allowed.
     if (!resultType && !llvm::isa<RankedTensorType>(resultType)) {
       return failure();
     }
@@ -51,6 +54,7 @@ void populateTinyPatternsAndLegality(AcclTypeConverter &typeConverter,
 
 class ConvertTinyToAccl
     : public ::impl::ConvertTinyToAcclBase<ConvertTinyToAccl> {
+public:
   ConvertTinyToAccl() = default;
 
   ConvertTinyToAccl(const std::string target, int numWarps = 4,
@@ -67,6 +71,22 @@ class ConvertTinyToAccl
     AcclTypeConverter typeConverter(context, numWarps, threadsPerWarp);
 
     RewritePatternSet patterns(context);
+
+    populateTinyPatternsAndLegality(typeConverter, patterns);
+
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+      return signalPassFailure();
   }
 };
 } // namespace
+
+namespace mlir::tiny {
+std::unique_ptr<OperationPass<ModuleOp>>
+createConvertTinyToAccl(std::string target, int numWarps, int threadsPerWarp) {
+  return std::make_unique<ConvertTinyToAccl>(target, numWarps, threadsPerWarp);
+}
+
+std::unique_ptr<OperationPass<ModuleOp>> createConvertTinyToAccl() {
+  return std::make_unique<ConvertTinyToAccl>();
+}
+} // namespace mlir::tiny

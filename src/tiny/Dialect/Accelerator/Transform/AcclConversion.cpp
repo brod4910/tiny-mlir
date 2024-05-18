@@ -1,5 +1,6 @@
 #include "tiny/Dialect/Accelerator/Transform//AcclConversion.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
+#include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
 namespace mlir {
 AcclTypeConverter::AcclTypeConverter(MLIRContext *context, int numWarps,
@@ -18,5 +19,11 @@ AcclTypeConverter::AcclTypeConverter(MLIRContext *context, int numWarps,
     return RankedTensorType::get(type.getShape(), type.getElementType(),
                                  encoding);
   });
+}
+
+AcclConversionTarget::AcclConversionTarget(MLIRContext &ctx,
+                                           AcclTypeConverter &typeConverter)
+    : ConversionTarget(ctx) {
+  addLegalDialect<tiny::accl::AcclDialect>();
 }
 } // namespace mlir
