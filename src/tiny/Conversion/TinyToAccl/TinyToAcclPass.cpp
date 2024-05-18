@@ -9,7 +9,46 @@
 #define GEN_PASS_DEF_CONVERTTINYTOACCL
 #include "tiny/Conversion/TinyToAccl/Passes.h.inc"
 
-namespace mlir::tiny {
+using namespace mlir;
+using namespace mlir::tiny;
+using namespace mlir::tiny::accl;
+
+namespace {
+/*
+Generic pattern converter seems pretty widely used across many difference MLIR
+Dialects. Most of the Tiny ops can be converted as passthrough and modifyng the
+encodings on the RankedTensorTypes.
+*/
+template <class Op>
+struct PassThroughUnaryPattern : public OpConversionPattern<Op> {
+  using OpConversionPattern<Op>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(Op op, typename Op::Adaptor adaptor,
+                                ConversionPatternRewriter &rewriter) {
+    auto resultType = op->getResult()->getType();
+    if (!resultType && !llvm::isa<RankedTensorType>(resultType)) {
+      return failure();
+    }
+
+    auto newResultType = this->getTypeConverter()->convertType(resultType);
+    rewriter.replaceOpWithNewOp<Op>(op, newResultType, adaptor.getOperands(),
+                                    op->getAttrs());
+    return success();
+  }
+};
+
+void populateTinyPatternsAndLegality(AcclTypeConverter &typeConverter,
+                                     RewritePatternSet &patterns) {
+  MLIRContext *context = typeConverter.getContext();
+  patterns.add<PassThroughUnaryPattern<tiny::Exp2Op>,
+               PassThroughUnaryPattern<tiny::NoOp>,
+               PassThroughUnaryPattern<tiny::SinOp>,
+               PassThroughUnaryPattern<tiny::Log2Op>,
+               PassThroughUnaryPattern<tiny::CastOp>,
+               PassThroughUnaryPattern<tiny::SqrtOp>,
+               PassThroughUnaryPattern<tiny::NegOp>>(typeConverter, context);
+}
+
 class ConvertTinyToAccl
     : public ::impl::ConvertTinyToAcclBase<ConvertTinyToAccl> {
   ConvertTinyToAccl() = default;
@@ -30,4 +69,4 @@ class ConvertTinyToAccl
     RewritePatternSet patterns(context);
   }
 };
-} // namespace mlir::tiny
+} // namespace

@@ -13,8 +13,8 @@ AcclTypeConverter::AcclTypeConverter(MLIRContext *context, int numWarps,
       return type;
     }
 
-    tiny::accl::CTALayoutAttr encoding = tiny::accl::getDefaultCTALayout(
-        this->context, type.getShape(), this->numWarps, this->threadsPerWarp);
+    tiny::accl::CTALayoutAttr encoding =
+        tiny::accl::getDefaultCTALayout(this->context, type.getShape());
     return RankedTensorType::get(type.getShape(), type.getElementType(),
                                  encoding);
   });
