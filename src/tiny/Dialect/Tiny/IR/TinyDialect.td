@@ -49,6 +49,6 @@ def Tiny_Dialect : Dialect {
     // let useDefaultTypePrinterParser = 1;
 }
 
-include "TinyTypes.td"
+include "tiny/Dialect/Tiny/IR/TinyTypes.td"
 
 #endif // TINY_DIALECT
