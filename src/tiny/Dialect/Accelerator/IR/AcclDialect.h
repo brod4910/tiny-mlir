@@ -2,6 +2,7 @@
 #include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "mlir/Pass/Pass.h"
 
 #include "mlir/Dialect/SCF/IR/SCF.h"
 

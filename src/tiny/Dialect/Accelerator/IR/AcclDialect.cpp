@@ -1,7 +1,9 @@
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
+#define GET_ATTRDEF_CLASSES
 #include "tiny/Dialect/Accelerator/IR/AcclAttrs.cpp.inc"
+
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.cpp.inc"
 #include <algorithm>
 #include <cstdint>

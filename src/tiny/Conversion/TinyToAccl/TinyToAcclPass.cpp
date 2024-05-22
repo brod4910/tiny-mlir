@@ -4,7 +4,6 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
-#include <memory>
 
 #define GEN_PASS_DECL_CONVERTTINYTOACCL
 #define GEN_PASS_DEF_CONVERTTINYTOACCL
@@ -69,24 +68,27 @@ public:
     ModuleOp module = getOperation();
 
     AcclTypeConverter typeConverter(context, numWarps, threadsPerWarp);
+    AcclConversionTarget conversionTarget(*context, typeConverter);
 
     RewritePatternSet patterns(context);
 
     populateTinyPatternsAndLegality(typeConverter, patterns);
 
-    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+    if (failed(applyPartialConversion(module, conversionTarget,
+                                      std::move(patterns))))
       return signalPassFailure();
   }
 };
 } // namespace
 
-namespace mlir::tiny {
 std::unique_ptr<OperationPass<ModuleOp>>
-createConvertTinyToAccl(std::string target, int numWarps, int threadsPerWarp) {
-  return std::make_unique<ConvertTinyToAccl>(target, numWarps, threadsPerWarp);
+mlir::tiny::createConvertTinyToAcclPass(std::string target, int numWarps,
+                                        int threadsPerWarp) {
+  return std::make_unique<::ConvertTinyToAccl>(target, numWarps,
+                                               threadsPerWarp);
 }
 
-std::unique_ptr<OperationPass<ModuleOp>> createConvertTinyToAccl() {
-  return std::make_unique<ConvertTinyToAccl>();
+std::unique_ptr<OperationPass<ModuleOp>>
+mlir::tiny::createConvertTinyToAcclPass() {
+  return std::make_unique<::ConvertTinyToAccl>();
 }
-} // namespace mlir::tiny

@@ -4,6 +4,7 @@ add_mlir_pdll_library(MLIRTinyAcclIncTransforms Passes.pdll Passes.inc EXTRA_INC
 
 add_tiny_library(MLIRTinyAcclTransforms
     Passes.cpp
+    AcclConversion.cpp
 
     DEPENDS
     MLIRTinyAcclIncTransforms
