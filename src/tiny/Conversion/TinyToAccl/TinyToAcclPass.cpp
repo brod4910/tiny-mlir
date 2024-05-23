@@ -96,6 +96,15 @@ public:
 
     populateTinyPatternsAndLegality(typeConverter, patterns);
 
+    auto i32_ty = IntegerType::get(module->getContext(), 32);
+
+    module->setAttr(
+        "accl.num-warps",
+        IntegerAttr::get(i32_ty, llvm::APInt(32, numWarps.getValue())));
+    module->setAttr(
+        "accl.threads-per-warp",
+        IntegerAttr::get(i32_ty, llvm::APInt(32, threadsPerWarp.getValue())));
+
     if (failed(applyPartialConversion(module, conversionTarget,
                                       std::move(patterns))))
       return signalPassFailure();

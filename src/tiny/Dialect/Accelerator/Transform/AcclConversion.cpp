@@ -24,5 +24,16 @@ AcclConversionTarget::AcclConversionTarget(MLIRContext &ctx,
                                            AcclTypeConverter &typeConverter)
     : ConversionTarget(ctx) {
   addLegalDialect<tiny::accl::AcclDialect>();
+  addDynamicallyLegalDialect<tiny::TinyDialect, scf::SCFDialect>(
+      [&](Operation *op) -> bool {
+        bool hasLegalRegions = true;
+        for (auto &region : op->getRegions()) {
+          hasLegalRegions = hasLegalRegions && typeConverter.isLegal(&region);
+        }
+        if (hasLegalRegions && typeConverter.isLegal(op)) {
+          return true;
+        }
+        return false;
+      });
 }
 } // namespace mlir
