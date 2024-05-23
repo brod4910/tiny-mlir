@@ -23,12 +23,13 @@ template <class Op>
 struct PassThroughUnaryPattern : public OpConversionPattern<Op> {
   using OpConversionPattern<Op>::OpConversionPattern;
 
-  LogicalResult matchAndRewrite(Op op, typename Op::Adaptor adaptor,
-                                ConversionPatternRewriter &rewriter) {
-    auto resultType = op->getResult()->getType();
+  LogicalResult
+  matchAndRewrite(Op op, typename Op::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto resultType = op->getResult(0).getType();
 
     // Ranked tensors types are strictly only allowed.
-    if (!resultType && !llvm::isa<RankedTensorType>(resultType)) {
+    if (resultType && !llvm::isa<RankedTensorType>(resultType)) {
       return failure();
     }
 
@@ -39,10 +40,31 @@ struct PassThroughUnaryPattern : public OpConversionPattern<Op> {
   }
 };
 
+struct ConstantPattern : public OpConversionPattern<tiny::ConstantOp> {
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(tiny::ConstantOp op,
+                  typename tiny::ConstantOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto resultType = op->getResult(0).getType();
+
+    // Ranked tensors types are strictly only allowed.
+    if (resultType && !llvm::isa<RankedTensorType>(resultType)) {
+      return failure();
+    }
+
+    auto newResultType = this->getTypeConverter()->convertType(resultType);
+    rewriter.replaceOpWithNewOp<tiny::ConstantOp>(
+        op, newResultType, adaptor.getOperands(), op->getAttrs());
+    return success();
+  }
+};
+
 void populateTinyPatternsAndLegality(AcclTypeConverter &typeConverter,
                                      RewritePatternSet &patterns) {
   MLIRContext *context = typeConverter.getContext();
-  patterns.add<PassThroughUnaryPattern<tiny::Exp2Op>,
+  patterns.add<ConstantPattern, PassThroughUnaryPattern<tiny::Exp2Op>,
                PassThroughUnaryPattern<tiny::NoOp>,
                PassThroughUnaryPattern<tiny::SinOp>,
                PassThroughUnaryPattern<tiny::Log2Op>,

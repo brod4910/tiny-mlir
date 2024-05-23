@@ -13,7 +13,6 @@ AcclTypeConverter::AcclTypeConverter(MLIRContext *context, int numWarps,
     if (type.getEncoding()) {
       return type;
     }
-
     tiny::accl::CTALayoutAttr encoding =
         tiny::accl::getDefaultCTALayout(this->context, type.getShape());
     return RankedTensorType::get(type.getShape(), type.getElementType(),
