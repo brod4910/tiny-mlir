@@ -14,6 +14,12 @@ using namespace mlir::tiny;
 using namespace mlir::tiny::accl;
 
 namespace {
+static void addNamedAttrs(Operation *op, DictionaryAttr dictAttrs) {
+  for (const NamedAttribute attr : dictAttrs.getValue())
+    if (!op->hasAttr(attr.getName()))
+      op->setAttr(attr.getName(), attr.getValue());
+}
+
 /*
 Generic pattern converter seems pretty widely used across many difference MLIR
 Dialects. Most of the Tiny ops can be converted as passthrough and modifyng the
@@ -47,16 +53,16 @@ struct ConstantPattern : public OpConversionPattern<tiny::ConstantOp> {
   matchAndRewrite(tiny::ConstantOp op,
                   typename tiny::ConstantOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    auto resultType = op->getResult(0).getType();
+    Type retType = getTypeConverter()->convertType(op.getType());
+    auto retShapedType = llvm::cast<RankedTensorType>(retType);
+    auto value = llvm::dyn_cast<DenseElementsAttr>(adaptor.getValue());
 
-    // Ranked tensors types are strictly only allowed.
-    if (resultType && !llvm::isa<RankedTensorType>(resultType)) {
-      return failure();
-    }
+    assert(value);
+    value = value.reshape(retShapedType);
 
-    auto newResultType = this->getTypeConverter()->convertType(resultType);
-    rewriter.replaceOpWithNewOp<tiny::ConstantOp>(
-        op, newResultType, adaptor.getOperands(), op->getAttrs());
+    addNamedAttrs(
+        rewriter.replaceOpWithNewOp<tiny::ConstantOp>(op, retShapedType, value),
+        adaptor.getAttributes());
     return success();
   }
 };
