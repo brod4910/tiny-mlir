@@ -1,7 +1,7 @@
 #ifndef TINY_TYPES
 #define TINY_TYPES
 
-include "TinyDialect.td"
+include "tiny/Dialect/Tiny/IR/TinyDialect.td"
 
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"

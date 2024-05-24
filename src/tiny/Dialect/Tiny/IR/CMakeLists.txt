@@ -5,17 +5,15 @@ mlir_tablegen(TinyTypes.h.inc -gen-typedef-decls -typedefs-dialect=tiny)
 mlir_tablegen(TinyTypes.cpp.inc -gen-typedef-decls -typedefs-dialect=tiny)
 mlir_tablegen(TinyDialect.h.inc -gen-dialect-decls -dialect=tiny)
 mlir_tablegen(TinyDialect.cpp.inc -gen-dialect-defs -dialect=tiny)
-add_public_tablegen_target(TinyOpsIncGen)
-add_dependencies(mlir-headers TinyOpsIncGen)
+add_public_tablegen_target(TinyIRIncGen)
+add_dependencies(mlir-headers TinyIRIncGen)
 
 add_mlir_doc(TinyDialect TinyDialect Tiny/ -gen-dialect-doc)
 
-add_mlir_dialect_library(MLIRTiny
+add_tiny_library(MLIRTiny
     TinyDialect.cpp
     TinyOps.cpp
-    
-    ADDITIONAL_HEADER_DIRS
-    ${PROJECT_SOURCE_DIR}/src
-    
-    LINK_LIBS PUBLIC
-    )
+
+    DEPENDS
+    TinyIRIncGen
+)

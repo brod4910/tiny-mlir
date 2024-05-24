@@ -1,1 +1,2 @@
+add_subdirectory(Accelerator)
 add_subdirectory(Tiny)
