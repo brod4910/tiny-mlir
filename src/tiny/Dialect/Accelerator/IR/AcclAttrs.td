@@ -60,30 +60,13 @@ def CTALayoutAttr : Accl_Attr<"CTALayout"> {
   let hasCustomAssemblyFormat = 1;
 }
 
-// class GEMMEncoding<string name, string attrMnemonic, list<Trait> traits = []> : Accl_Attr<name, attrMnemonic, traits> {
-//   let description = [{
-//     A GEMM encoding described by Thread-Block Tiles, Warp Tiles, Thread Tiles, and Tensor Cores.
-//   }];
+class GEMMEncoding<string name, string attrMnemonic, list<Trait> traits = []> : Accl_Attr<name, traits> {
+  let mnemonic = attrMnemonic;
+  
+  let description = [{
+    A GEMM encoding described by Thread-Block Tiles, Warp Tiles, Thread Tiles, and Tensor Cores.
+  }];
 
-//   code extraGEMMDeclaration = [{
-//     SmallVector<unsigned> getThreadBlockTileOrder();
-//     SmallVector<unsigned> getWarpTileOrder();
-//     SmallVector<unsigned> getThreadTileOrder();
-//   }];
-// }
-
-// def AmpereGEMMEncodingAttr : GEMMEncoding<"AmpereGEMMEncoding", "ampere_gemm_encoding"> {
-//   let mnemonic = "ampere_gemm";
-
-//   let description = [{
-//     Encoding that describes valid a GEMM design for the Ampere architecture
-//   }];
-
-//   let parameters = (ins "CTALayoutAttr":$ctaLayout,
-//                         "TensorCoreAttr":$tensorCore);
-
-//   let extraClassDeclaration = extraGEMMDeclaration;
-//   let hasCustomAssemblyFormat = 1;
-// }
+}
 
 #endif // ACCL_ATTRS
