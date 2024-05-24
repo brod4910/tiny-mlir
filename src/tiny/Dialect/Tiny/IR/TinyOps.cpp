@@ -2,9 +2,9 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/FunctionImplementation.h"
-#include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/Interfaces/FunctionImplementation.h"
+#include "mlir/Interfaces/FunctionInterfaces.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 

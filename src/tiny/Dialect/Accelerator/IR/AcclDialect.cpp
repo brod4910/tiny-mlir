@@ -2,10 +2,10 @@
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 #include <functional>
 
+#include "tiny/Dialect/Accelerator/IR/AcclDialect.cpp.inc"
+
 #define GET_ATTRDEF_CLASSES
 #include "tiny/Dialect/Accelerator/IR/AcclAttrs.cpp.inc"
-
-#include "tiny/Dialect/Accelerator/IR/AcclDialect.cpp.inc"
 
 #include <cstdint>
 #include <numeric>
@@ -27,13 +27,12 @@ Operation *AcclDialect::materializeConstant(OpBuilder &builder, Attribute value,
   return tiny::ConstantOp::materialize(builder, value, type, loc);
 }
 
-int ceil_div(int a, int b) { return (a + b - 1) / b; }
-
 /*
 TODO: Move to file
 ---------------------------------------------------
 ---------------------- UTILITY --------------------
 --------------------------------------------------- */
+int ceil_div(int a, int b) { return (a + b - 1) / b; }
 
 static LogicalResult parseIntAttrValue(AsmParser &parser, Attribute attr,
                                        unsigned &value, StringRef desc) {
@@ -140,14 +139,14 @@ Attribute CTALayoutAttr::parse(AsmParser &parser, Type type) {
               .failed()) {
         return {};
       }
-    } else if (attr.getName() == "threadBlockTile") {
-      if (parseIntArrayAttr(parser, attr, threadBlockTile,
+    } else if (attr.getName() == "warpTile") {
+      if (parseIntArrayAttr(parser, attr, warpTile,
                             "thread block tile dimensions")
               .failed()) {
         return {};
       }
-    } else if (attr.getName() == "threadBlockTile") {
-      if (parseIntArrayAttr(parser, attr, threadBlockTile,
+    } else if (attr.getName() == "threadTile") {
+      if (parseIntArrayAttr(parser, attr, threadTile,
                             "thread block tile dimensions")
               .failed()) {
         return {};

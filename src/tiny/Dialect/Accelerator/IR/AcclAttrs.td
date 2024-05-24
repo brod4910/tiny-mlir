@@ -7,29 +7,39 @@ include "AcclDialect.td"
 
 include "mlir/IR/AttrTypeBase.td"
 
-class Accl_Attr<string name, string attrMnemonic, list<Trait> traits = []>
-                : AttrDef<Accl_Dialect, name, traits, "::mlir::Attribute"> {
+class Accl_Attr<string name, list<Trait> traits = []>
+                : AttrDef<Accl_Dialect, name, traits> {
   let cppNamespace = "::mlir::tiny::accl";
-  let description = [{}];
-  let mnemonic = "accl." # attrMnemonic;
 }
 
-class Accl_DimensionAttr<string name, string attrMnemonic, list<Trait> traits = []> 
-                         : Accl_Attr<name, attrMnemonic, traits> {
+class Dim3Attr<string name, string attrMnemonic, list<Trait> traits = []> 
+                         : Accl_Attr<name, traits> {
+  let mnemonic = attrMnemonic;
+
   let parameters = (ins "unsigned": $M,
                         "unsigned": $N,
                         "unsigned": $K);
 
-  let assemblyFormat = "`<` struct(params) `>`";
+  let assemblyFormat = "`<` struct(params) `>`";  
 }
 
-def ThreadBlockTileAttr : Accl_DimensionAttr<"ThreadBlockTile", "thread_block_tile">;
+def ThreadBlockTileAttr : Dim3Attr<"ThreadBlockTile", "thread_block_tile">;
 
-def WarpTileAttr : Accl_DimensionAttr<"WarpTile", "warp_tile">;
+def WarpTileAttr : Dim3Attr<"WarpTile", "warp_tile">;
 
-def ThreadTileAttr : Accl_DimensionAttr<"ThreadTile", "thread_tile">;
+def ThreadTileAttr : Dim3Attr<"ThreadTile", "thread_tile">;
 
-def CTALayoutAttr : Accl_Attr<"CTALayout", "cta_layout"> {
+def TensorCoreAttr : Dim3Attr<"TensorCore", "tensor_core"> {
+  let parameters = (ins "unsigned":$M,
+                        "unsigned":$N,
+                        "unsigned":$K,
+                        "Type":$DtypeIn, 
+                        "Type":$DtypeOut);
+}
+
+def CTALayoutAttr : Accl_Attr<"CTALayout"> {
+  let mnemonic = "cta_layout";
+
   let parameters = (ins "ThreadBlockTileAttr":$threadBlockTile,
                         "WarpTileAttr":$warpTile,
                         "ThreadTileAttr":$threadTile);
@@ -48,14 +58,6 @@ def CTALayoutAttr : Accl_Attr<"CTALayout", "cta_layout"> {
 
   let genVerifyDecl = 1;
   let hasCustomAssemblyFormat = 1;
-}
-
-def TensorCoreAttr : Accl_DimensionAttr<"TensorCore", "tensor_core"> {
-  let parameters = (ins "unsigned":$M,
-                        "unsigned":$N,
-                        "unsigned":$K,
-                        "Type":$DtypeIn, 
-                        "Type":$DtypeOut);
 }
 
 // class GEMMEncoding<string name, string attrMnemonic, list<Trait> traits = []> : Accl_Attr<name, attrMnemonic, traits> {
