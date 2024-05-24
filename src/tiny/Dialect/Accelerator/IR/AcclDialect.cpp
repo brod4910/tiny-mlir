@@ -93,7 +93,8 @@ static LogicalResult parseIntArrayAttr(AsmParser &parser,
 CTALayoutAttr getDefaultCTALayout(MLIRContext *context,
                                   ArrayRef<int64_t> shape) {
   int rank = shape.size();
-  constexpr uint64_t threadsPerWarp = 8;
+  // TODO: Make this a const outside of this function
+  constexpr uint64_t threadsPerWarp = 128;
   uint64_t numel =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>());
   uint64_t numWarps = ceil_div(numel, threadsPerWarp);
