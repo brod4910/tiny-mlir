@@ -126,7 +126,18 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
 --------------------------------------------------- 
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
+class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
+  let arguments = (ins Tiny_Tensor: $tensor1, Tiny_Tensor: $tensor2);
+  let results = (outs Tiny_Tensor: $result);
+}
 
+def Tiny_Add : Tiny_BinaryOp<"add", [ElementwiseMappable, Pure, InferTensorTypeWithReify]> {
+  let summary = "Add two tensors";
+  
+  let description = [{
+    An operation that adds two tensors.
+  }];
+}
 /* 
 --------------------------------------------------- 
 -------------------- LOAD OPS ---------------------
