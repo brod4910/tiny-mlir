@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_DEPS ON)
 
-set(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE INTERNAL "" FORCE)
+set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "14.4" CACHE INTERNAL "" FORCE)
 
 set(LLVM_EXTERNAL_LIT "/Users/brodriguez/miniconda3/envs/llvm/bin/lit")
@@ -60,9 +60,6 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_BINARY_DIR}/src) # Tablegen'd files
-
-# LDFLAGS
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++")
 
 add_subdirectory(tests)
 add_subdirectory(tools)
