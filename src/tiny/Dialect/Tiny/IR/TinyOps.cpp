@@ -1,14 +1,21 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Support/LogicalResult.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
+#include <algorithm>
+#include <sys/_types/_int64_t.h>
 
 #define GET_OP_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
@@ -99,6 +106,43 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
 
+TypeRange padLeft(TypeRange types, int64_t maxRank) {
+  SmallVector<Type> padded;
+
+  for (auto type : types) {
+    auto rankedType = cast<RankedTensorType>(type);
+
+    if (rankedType.getRank() == maxRank) {
+      padded.push_back(rankedType);
+    }
+
+    int64_t pad = maxRank - rankedType.getRank();
+    auto shape = SmallVector<int64_t>(pad, 1);
+
+    for (auto d : rankedType.getShape()) {
+      shape.push_back(d);
+    }
+
+    auto newRankType =
+        RankedTensorType::get(shape, rankedType.getElementType(), {});
+    padded.push_back(newRankType);
+
+    return padded;
+  }
+}
+
+Value broadcast(OpBuilder &builder, TypeRange types) {
+  auto maxEle =
+      *std::max_element(types.begin(), types.end(), [](Type t1, Type t2) {
+        auto t1T = cast<RankedTensorType>(t1);
+        auto t2T = cast<RankedTensorType>(t2);
+        return t1T.getRank() > t2T.getRank();
+      });
+  auto maxRank = cast<RankedTensorType>(maxEle).getRank();
+
+  auto padded = padLeft(types, maxRank);
+}
+
 /* ------------------ Add Op ---------------------- */
 
 LogicalResult
@@ -113,9 +157,6 @@ AddOp::reifyReturnTypeShapes(OpBuilder &builder, ValueRange operands,
   if (!t1Type || !t2Type) {
     return failure();
   }
-
-  auto t1Shape = t1Type.getShape();
-  auto t2Shape = t2.getShape();
 
   return success();
 }
