@@ -10,3 +10,6 @@
 
 #define GET_OP_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyOps.h.inc"
+
+#define GET_TYPEDEF_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyTypes.h.inc"

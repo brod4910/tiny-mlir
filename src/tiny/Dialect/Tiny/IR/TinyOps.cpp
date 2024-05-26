@@ -1,11 +1,16 @@
-#include "tiny/Dialect/Tiny/IR/TinyOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
+#include "mlir/Support/LogicalResult.h"
+#include "tiny/Dialect/Tiny/IR/TinyDialect.h"
+#include "llvm/Support/Casting.h"
 
+#define GET_OP_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
 #include <optional>
@@ -91,10 +96,36 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 
 /*
 ---------------------------------------------------
+------------------- BINARY OPS --------------------
+--------------------------------------------------- */
+
+/* ------------------ Add Op ---------------------- */
+
+LogicalResult
+AddOp::reifyReturnTypeShapes(OpBuilder &builder, ValueRange operands,
+                             SmallVectorImpl<Value> &reifiedReturnShapes) {
+  Value tensor1 = operands.front();
+  Value tensor2 = operands.back();
+
+  auto t1Type = llvm::dyn_cast<RankedTensorType>(tensor1.getType());
+  auto t2Type = llvm::dyn_cast<RankedTensorType>(tensor2.getType());
+
+  if (!t1Type || !t2Type) {
+    return failure();
+  }
+
+  auto t1Shape = t1Type.getShape();
+  auto t2Shape = t2.getShape();
+
+  return success();
+}
+
+/*
+---------------------------------------------------
 ------------------ FUNCTION OPS -------------------
 ---------------------------------------------------
 
-            COPIED FROM THE MLIR REPO
+             COPIED FROM THE MLIR REPO
 */
 
 /* ------------------ FuncOp ------------------- */
