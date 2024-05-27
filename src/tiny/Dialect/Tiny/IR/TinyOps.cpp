@@ -1,3 +1,4 @@
+#include "mlir/Dialect/Traits.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -14,8 +15,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
-#include <algorithm>
-#include <sys/_types/_int64_t.h>
 
 #define GET_OP_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
@@ -131,23 +130,16 @@ TypeRange padLeft(TypeRange types, int64_t maxRank) {
   }
 }
 
-Value broadcast(OpBuilder &builder, TypeRange types) {
-  auto maxEle =
-      *std::max_element(types.begin(), types.end(), [](Type t1, Type t2) {
-        auto t1T = cast<RankedTensorType>(t1);
-        auto t2T = cast<RankedTensorType>(t2);
-        return t1T.getRank() > t2T.getRank();
-      });
-  auto maxRank = cast<RankedTensorType>(maxEle).getRank();
-
-  auto padded = padLeft(types, maxRank);
-}
+Value broadcast(OpBuilder &builder, TypeRange types) {}
 
 /* ------------------ Add Op ---------------------- */
 
-LogicalResult
-AddOp::reifyReturnTypeShapes(OpBuilder &builder, ValueRange operands,
-                             SmallVectorImpl<Value> &reifiedReturnShapes) {
+LogicalResult AddOp::inferReturnTypeComponents(
+    ::mlir::MLIRContext *context, ::std::optional<::mlir::Location> location,
+    ::mlir::ValueShapeRange operands, ::mlir::DictionaryAttr attributes,
+    ::mlir::OpaqueProperties properties, ::mlir::RegionRange regions,
+    ::llvm::SmallVectorImpl<::mlir::ShapedTypeComponents>
+        &inferredReturnShapes) {
   Value tensor1 = operands.front();
   Value tensor2 = operands.back();
 
@@ -157,6 +149,15 @@ AddOp::reifyReturnTypeShapes(OpBuilder &builder, ValueRange operands,
   if (!t1Type || !t2Type) {
     return failure();
   }
+
+  auto resType = llvm::dyn_cast<RankedTensorType>(
+      OpTrait::util::getBroadcastedType(t1Type, t2Type));
+
+  if (!resType || resType.getNumDynamicDims() != 0) {
+    return failure();
+  }
+
+  inferredReturnTypes.push_back(resType);
 
   return success();
 }

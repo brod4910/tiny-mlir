@@ -131,7 +131,7 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
   let results = (outs Tiny_Tensor: $result);
 }
 
-def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, Pure, InferTensorTypeWithReify]> {
+def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, Pure, InferTensorType]> {
   let summary = "Add two tensors";
   
   let description = [{
