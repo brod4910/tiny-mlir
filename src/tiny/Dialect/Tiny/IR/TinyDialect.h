@@ -1,6 +1,7 @@
 #pragma once
 #include "mlir/Bytecode/BytecodeOpInterface.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Traits.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/Interfaces/CastInterfaces.h"

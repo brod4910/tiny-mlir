@@ -9,8 +9,6 @@ set(BUILD_DEPS ON)
 set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE INTERNAL "" FORCE)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "14.4" CACHE INTERNAL "" FORCE)
 
-set(LLVM_EXTERNAL_LIT "/Users/brodriguez/miniconda3/envs/llvm/bin/lit")
-
 set(LLVM_BUILD_DIR "" CACHE PATH "Path to LLVM build directory")
 message(STATUS "Using LLVM build directory: ${LLVM_BUILD_DIR}")
 set(LLVM_DIR "${LLVM_BUILD_DIR}/lib/cmake/llvm" CACHE PATH "Path to LLVM build directory" FORCE)

@@ -13,12 +13,18 @@ include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 include "mlir/IR/BuiltinAttributes.td"
+include "mlir/IR/CommonTypeConstraints.td"
 include "mlir/IR/OpBase.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/SymbolInterfaces.td"
 
 
 class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnemonic, traits>;
+
+/* 
+--------------------------------------------------- 
+------------------ Constraints --------------------
+--------------------------------------------------- */
 
 /* 
 --------------------------------------------------- 
@@ -132,13 +138,16 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` type($result)";
 }
 
-def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, Pure, InferTensorType, Commutative, SameOperandsAndResultType]> {
+def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, 
+                                       Pure, 
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultType, 
+                                       Commutative]> {
   let summary = "Add two tensors";
   
   let description = [{
     An operation that adds two tensors.
   }];
-
 }
 /* 
 --------------------------------------------------- 
