@@ -83,7 +83,6 @@ def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsA
 }
 
 def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterface>,
-                                        /*DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,*/
                                         Pure,
                                         SameOperandsAndResultShape]> {
     let summary = "Cast the value to another qualified-type.";
@@ -127,16 +126,19 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_Tensor: $tensor1, Tiny_Tensor: $tensor2);
+  let arguments = (ins Tiny_Tensor: $lhs, Tiny_Tensor: $rhs);
   let results = (outs Tiny_Tensor: $result);
+  
+  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` type($result)";
 }
 
-def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, Pure, InferTensorType]> {
+def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, Pure, InferTensorType, Commutative, SameOperandsAndResultType]> {
   let summary = "Add two tensors";
   
   let description = [{
     An operation that adds two tensors.
   }];
+
 }
 /* 
 --------------------------------------------------- 

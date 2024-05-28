@@ -6,18 +6,16 @@
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
-#include "mlir/IR/ValueRange.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
+#include "mlir/Interfaces/InferTypeOpInterface.h"
 #include "mlir/Support/LogicalResult.h"
-#include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
 
-#define GET_OP_CLASSES
-#include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
+#include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
 #include <optional>
 
@@ -125,39 +123,34 @@ TypeRange padLeft(TypeRange types, int64_t maxRank) {
     auto newRankType =
         RankedTensorType::get(shape, rankedType.getElementType(), {});
     padded.push_back(newRankType);
-
-    return padded;
   }
+  return padded;
 }
-
-Value broadcast(OpBuilder &builder, TypeRange types) {}
 
 /* ------------------ Add Op ---------------------- */
 
 LogicalResult AddOp::inferReturnTypeComponents(
-    ::mlir::MLIRContext *context, ::std::optional<::mlir::Location> location,
-    ::mlir::ValueShapeRange operands, ::mlir::DictionaryAttr attributes,
-    ::mlir::OpaqueProperties properties, ::mlir::RegionRange regions,
-    ::llvm::SmallVectorImpl<::mlir::ShapedTypeComponents>
-        &inferredReturnShapes) {
-  Value tensor1 = operands.front();
-  Value tensor2 = operands.back();
+    MLIRContext *context, ::std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    llvm::SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  Value lhs = operands.front();
+  Value rhs = operands.back();
 
-  auto t1Type = llvm::dyn_cast<RankedTensorType>(tensor1.getType());
-  auto t2Type = llvm::dyn_cast<RankedTensorType>(tensor2.getType());
+  auto lhsType = llvm::dyn_cast<RankedTensorType>(lhs.getType());
+  auto rhsType = llvm::dyn_cast<RankedTensorType>(rhs.getType());
 
-  if (!t1Type || !t2Type) {
+  if (!lhsType || !rhsType) {
     return failure();
   }
 
-  auto resType = llvm::dyn_cast<RankedTensorType>(
-      OpTrait::util::getBroadcastedType(t1Type, t2Type));
-
-  if (!resType || resType.getNumDynamicDims() != 0) {
+  SmallVector<int64_t, 4> resultShape;
+  if (!OpTrait::util::getBroadcastedShape(lhsType.getShape(),
+                                          rhsType.getShape(), resultShape)) {
     return failure();
   }
 
-  inferredReturnTypes.push_back(resType);
+  inferredReturnShapes.emplace_back(resultShape);
 
   return success();
 }
