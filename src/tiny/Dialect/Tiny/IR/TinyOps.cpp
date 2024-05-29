@@ -136,6 +136,56 @@ LogicalResult AddOp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
+/* ------------------ Sub Op ---------------------- */
+
+LogicalResult SubOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/* ------------------ Mul Op ---------------------- */
+
+LogicalResult MulOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/* ------------------ Div Op ---------------------- */
+
+LogicalResult DivOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/* ----------------- CMPEQ Op --------------------- */
+
+LogicalResult CmpEqOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/* ------------------ Max Op ---------------------- */
+
+LogicalResult MaxOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
 /*
 ---------------------------------------------------
 ------------------ FUNCTION OPS -------------------

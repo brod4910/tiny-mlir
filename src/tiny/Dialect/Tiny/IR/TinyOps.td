@@ -139,15 +139,77 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 }
 
 def Tiny_AddOp : Tiny_BinaryOp<"add", [
-                                       Pure, 
-                                       ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType, 
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>]> {
+                                       Pure,
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultElementType]> {
   let summary = "Add two tensors";
   
   let description = [{
     An operation that adds two tensors.
+  }];
+}
+
+def Tiny_SubOp : Tiny_BinaryOp<"sub", [
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       Pure, 
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultElementType]> {
+  let summary = "Subtract two tensors";
+  
+  let description = [{
+    An operation that subtracts one tensor with the other.
+  }];
+}
+
+def Tiny_MulOp : Tiny_BinaryOp<"mul", [
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       Commutative,
+                                       Pure,
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultElementType]> {
+  let summary = "Multiply two tensors";
+  
+  let description = [{
+    An operation that multiplies two tensors.
+  }];
+}
+
+def Tiny_DivOp : Tiny_BinaryOp<"div", [
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       Pure, 
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultElementType]> {
+  let summary = "Divide two tensors";
+  
+  let description = [{
+    An operation that divides one tensor with the other.
+  }];
+}
+
+def Tiny_CmpEqOp : Tiny_BinaryOp<"cmpeq", [
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       Pure, 
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultElementType]> {
+  let summary = "Compares whether the values in the tensor are equal";
+  
+  let description = [{
+    An operation that compares if the values in the two tensors are equal.
+  }];
+}
+
+def Tiny_MaxOp : Tiny_BinaryOp<"max", [
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       Pure, 
+                                       Commutative,
+                                       ResultsBroadcastableShape, 
+                                       SameOperandsAndResultElementType]> {
+  let summary = "Take the max of the two tensors";
+  
+  let description = [{
+    An operation that takes the max of the two input tensors
   }];
 }
 /* 
