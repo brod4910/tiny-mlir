@@ -32,4 +32,8 @@ single MMA Op: c = a * b + c
 Attribute getDefaultMMAEncoding(MLIRContext *context, int numWarps,
                                 int threadsPerWarp);
 
+// TODO: Implement logic to check if broadcasting would be inefficient.
+//  Create a pattern that checks and rewrites with perhaps an outer-loop
+LogicalResult isInefficientBroadcasting();
+
 } // namespace mlir::tiny::accl
