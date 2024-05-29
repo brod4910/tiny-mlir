@@ -141,7 +141,7 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_AddOp : Tiny_BinaryOp<"add", [
                                        Pure, 
                                        ResultsBroadcastableShape, 
-                                       SameOperandsAndResultType, 
+                                       SameOperandsAndResultElementType, 
                                        Commutative,
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>]> {
   let summary = "Add two tensors";
