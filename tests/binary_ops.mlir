@@ -1,11 +1,15 @@
 // RUN: tiny-opt %s | FileCheck %s
 
-// CHECK-LABEL: @simple_bool_constant
-tiny.func @simple_add() -> tensor<10x10x10xi8> {
-    %0 = tiny.constant dense<0> : tensor<10x1x10xi8>
-    %1 = tiny.constant dense<1> : tensor<1x10xi8>
+// CHECK-LABEL: @simple_add
+tiny.func @simple_add(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
+    %0 = tiny.add %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
 
-    %2 = tiny.add %0, %1 : tensor<?x?x?xi8>
+    tiny.return %0 : tensor<10x10xi8>
+}
 
-    tiny.return %0 : tensor<i1>
+// CHECK-LABEL: @add_broadcast
+tiny.func @add_broadcast(%arg0: tensor<10x1x10xi8>, %arg1: tensor<10x1xi8>) -> tensor<10x10x10xi8> {
+    %0 = tiny.add %arg0, %arg1 : (tensor<10x10x10xi8>, tensor<10x1xi8>) -> tensor<10x10x10xi8>
+
+    tiny.return %0 : tensor<10x10x10xi8>
 }

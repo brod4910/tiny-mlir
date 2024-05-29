@@ -135,14 +135,15 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
   let arguments = (ins Tiny_Tensor: $lhs, Tiny_Tensor: $rhs);
   let results = (outs Tiny_Tensor: $result);
   
-  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` type($result)";
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_AddOp : Tiny_BinaryOp<"add", [ElementwiseMappable, 
+def Tiny_AddOp : Tiny_BinaryOp<"add", [
                                        Pure, 
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultType, 
-                                       Commutative]> {
+                                       Commutative,
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>]> {
   let summary = "Add two tensors";
   
   let description = [{
