@@ -9,6 +9,7 @@
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
+#include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -103,7 +104,37 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
 
+LogicalResult BinaryOpShapeInference(
+    ValueShapeRange operands,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto lhs = operands.getValueAsShape(0);
+  auto rhs = operands.getValueAsShape(1);
+
+  auto lhsShape = ShapedTypeComponents(lhs);
+  auto rhsShape = ShapedTypeComponents(rhs);
+
+  SmallVector<int64_t> resultShape;
+
+  if (!OpTrait::util::getBroadcastedShape(lhsShape.getDims(),
+                                          rhsShape.getDims(), resultShape)) {
+    return failure();
+  }
+
+  inferredReturnShapes.emplace_back(ArrayRef(resultShape),
+                                    lhs.getElementType());
+
+  return success();
+}
+
 /* ------------------ Add Op ---------------------- */
+
+LogicalResult AddOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
 
 /*
 ---------------------------------------------------
