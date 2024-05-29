@@ -1,5 +1,4 @@
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
-#include "tiny/Dialect/Tiny/IR/TinyOps.h"
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -9,11 +8,12 @@
 #include "llvm/ADT/TypeSwitch.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.cpp.inc"
-#define GET_TYPEDEF_CLASSES
-#include "tiny/Dialect/Tiny/IR/TinyTypes.cpp.inc"
 
 #define GET_OP_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
+
+#define GET_TYPEDEF_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyTypes.cpp.inc"
 
 namespace mlir::tiny {
 
