@@ -127,10 +127,36 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
 ------------------- REDUCE OPS --------------------
 --------------------------------------------------- */
 
+class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
+  let arguments = (ins Tiny_Tensor: $value, I32Attr: $axis);
+  let results = (outs Tiny_Tensor: $result);
+
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_MaxOp : Tiny_ReduceOp<"max", []> {
+  let summary = "Max value along the axis.";
+
+  let description = [{
+    An operation that takes the max value along the given axis dimension.
+  }];
+}
+
+def Tiny_SumOp : Tiny_ReduceOp<"sum", []> {
+  let summary = "Sum along the axis.";
+
+  let description = [{
+    An operation that sums along the given axis dimension.
+  }];
+}
+
 /* 
 --------------------------------------------------- 
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
+// TODO: Explore elementwise mappable trait for broadcasted
+// tensors
+
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
   let arguments = (ins Tiny_Tensor: $lhs, Tiny_Tensor: $rhs);
   let results = (outs Tiny_Tensor: $result);
@@ -189,10 +215,10 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
 }
 
 def Tiny_CmpEqOp : Tiny_BinaryOp<"cmpeq", [
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       Pure, 
-                                       ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType]> {
+                                           DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                           Pure, 
+                                           ResultsBroadcastableShape, 
+                                           SameOperandsAndResultElementType]> {
   let summary = "Compares whether the values in the tensor are equal";
   
   let description = [{
@@ -200,16 +226,28 @@ def Tiny_CmpEqOp : Tiny_BinaryOp<"cmpeq", [
   }];
 }
 
-def Tiny_MaxOp : Tiny_BinaryOp<"max", [
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       Pure, 
-                                       Commutative,
-                                       ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType]> {
+def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
+                                           DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                           Pure, 
+                                           ResultsBroadcastableShape, 
+                                           SameOperandsAndResultElementType]> {
+  let summary = "Compares whether the values in the tensor are less-than";
+  
+  let description = [{
+    An operation that compares if the values in the two tensors are less-than.
+  }];
+}
+
+def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
+                                               DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                               Pure, 
+                                               Commutative,
+                                               ResultsBroadcastableShape, 
+                                               SameOperandsAndResultElementType]> {
   let summary = "Take the max of the two tensors";
   
   let description = [{
-    An operation that takes the max of the two input tensors
+    An operation that takes the max of the two input tensors element-wise
   }];
 }
 /* 

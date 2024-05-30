@@ -176,9 +176,19 @@ LogicalResult CmpEqOp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
+/* ----------------- CMPLT Op --------------------- */
+
+LogicalResult CmpLtOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
 /* ------------------ Max Op ---------------------- */
 
-LogicalResult MaxOp::inferReturnTypeComponents(
+LogicalResult MaximumOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
