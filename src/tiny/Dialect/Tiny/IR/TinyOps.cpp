@@ -18,6 +18,7 @@
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
+#include <__algorithm/remove_if.h>
 #include <optional>
 
 namespace mlir::tiny {
@@ -97,6 +98,48 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 
   // The shape is required to match if both types are ranked.
   return succeeded(verifyCompatibleShape(input, output));
+}
+
+/*
+---------------------------------------------------
+------------------- REDUCE OPS --------------------
+--------------------------------------------------- */
+
+LogicalResult ReduceOpShapeInference(
+    ValueShapeRange operands,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+
+  auto value = operands.getValueAsShape(0);
+  auto axis = dyn_cast<IntegerAttr>(operands.getValues().back());
+
+  auto rank = value.getRank();
+  int64_t realAxis = axis.getInt();
+
+  if (realAxis < 0) {
+    realAxis = rank + axis.getInt();
+  }
+
+  if (realAxis >= rank) {
+    return failure();
+  }
+
+  SmallVector<int64_t> resultShape;
+  value.getDims(resultShape);
+
+  resultShape.erase(resultShape.begin() + realAxis);
+
+  inferredReturnShapes.emplace_back(ArrayRef(resultShape),
+                                    value.getElementType());
+
+  return success();
+}
+
+LogicalResult MaxOp::inferReturnTypeComponents(
+    MLIRContext *context, ::std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return ReduceOpShapeInference(operands, inferredReturnShapes);
 }
 
 /*
