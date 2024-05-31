@@ -135,9 +135,8 @@ class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 }
 
 def Tiny_MaxOp : Tiny_ReduceOp<"max", [
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypes"]>,
                                        Pure,
-                                       SameOperandsAndResultElementType
                                       ]> {
   let summary = "Max value along the axis.";
 
@@ -147,9 +146,8 @@ def Tiny_MaxOp : Tiny_ReduceOp<"max", [
 }
 
 def Tiny_SumOp : Tiny_ReduceOp<"sum", [
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypes"]>,
                                        Pure,
-                                       SameOperandsAndResultElementType
                                       ]> {
   let summary = "Sum along the axis.";
 

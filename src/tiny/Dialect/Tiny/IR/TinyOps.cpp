@@ -113,20 +113,23 @@ LogicalResult ReduceOpShapeInference(
   auto axis = dyn_cast<IntegerAttr>(operands.getValues().back());
 
   auto rank = value.getRank();
-  int64_t realAxis = axis.getInt();
+  auto ax = axis.getInt();
 
-  if (realAxis < 0) {
-    realAxis = rank + axis.getInt();
-  }
-
-  if (realAxis >= rank) {
+  // Bounds check for -/+ axis
+  if (rank + ax < 0 || ax >= rank) {
     return failure();
   }
 
   SmallVector<int64_t> resultShape;
   value.getDims(resultShape);
 
-  resultShape.erase(resultShape.begin() + realAxis);
+  auto it = resultShape.begin();
+
+  if (ax < 0) {
+    it = resultShape.end();
+  }
+
+  resultShape.erase(it + ax);
 
   inferredReturnShapes.emplace_back(ArrayRef(resultShape),
                                     value.getElementType());
@@ -134,13 +137,21 @@ LogicalResult ReduceOpShapeInference(
   return success();
 }
 
-LogicalResult MaxOp::inferReturnTypeComponents(
-    MLIRContext *context, ::std::optional<Location> location,
-    ValueShapeRange operands, DictionaryAttr attributes,
-    OpaqueProperties properties, RegionRange regions,
-    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return ReduceOpShapeInference(operands, inferredReturnShapes);
-}
+// LogicalResult MaxOp::inferReturnTypeComponents(
+//     MLIRContext *context, std::optional<Location> location,
+//     ValueShapeRange operands, DictionaryAttr attributes,
+//     OpaqueProperties properties, RegionRange regions,
+//     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+//   return ReduceOpShapeInference(operands, inferredReturnShapes);
+// }
+
+// LogicalResult SumOp::inferReturnTypeComponents(
+//     MLIRContext *context, std::optional<Location> location,
+//     ValueShapeRange operands, DictionaryAttr attributes,
+//     OpaqueProperties properties, RegionRange regions,
+//     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+//   return ReduceOpShapeInference(operands, inferredReturnShapes);
+// }
 
 /*
 ---------------------------------------------------
