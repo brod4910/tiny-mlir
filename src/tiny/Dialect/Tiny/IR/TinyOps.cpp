@@ -12,13 +12,12 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
-
-#include <optional>
 
 namespace mlir::tiny {
 /*
@@ -101,6 +100,60 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 
 /*
 ---------------------------------------------------
+------------------- REDUCE OPS --------------------
+--------------------------------------------------- */
+
+LogicalResult ReduceOpShapeInference(
+    RankedTensorType value, int32_t axis,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+
+  auto rank = value.getRank();
+
+  // Bounds check for -/+ axis
+  if (rank + axis < 0 || axis >= rank) {
+    return failure();
+  }
+
+  auto valueShape = value.getShape();
+
+  axis = axis >= 0 ? axis : rank + axis;
+
+  SmallVector<int64_t> resultShape;
+
+  for (int i = 0; i < valueShape.size(); ++i) {
+    if (i != axis) {
+      resultShape.push_back(valueShape[i]);
+    }
+  }
+
+  inferredReturnShapes.emplace_back(ArrayRef(resultShape),
+                                    value.getElementType());
+
+  return success();
+}
+
+LogicalResult MaxOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    MaxOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto value = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto axis = adaptor.getAxis();
+
+  return ReduceOpShapeInference(value, axis, inferredReturnShapes);
+}
+
+LogicalResult SumOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    SumOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto value = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto axis = adaptor.getAxis();
+
+  return ReduceOpShapeInference(value, axis, inferredReturnShapes);
+}
+
+/*
+---------------------------------------------------
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
 
@@ -176,9 +229,19 @@ LogicalResult CmpEqOp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
+/* ----------------- CMPLT Op --------------------- */
+
+LogicalResult CmpLtOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
 /* ------------------ Max Op ---------------------- */
 
-LogicalResult MaxOp::inferReturnTypeComponents(
+LogicalResult MaximumOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
