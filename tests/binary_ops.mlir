@@ -42,7 +42,7 @@ tiny.func @simple_cmpeq(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> ten
     tiny.return %0 : tensor<10x10xi8>
 }
 
-// CHECK-LABEL: @simple_cmpeq
+// CHECK-LABEL: @simple_cmplt
 tiny.func @simple_cmplt(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
     %0 = tiny.cmplt %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
 
