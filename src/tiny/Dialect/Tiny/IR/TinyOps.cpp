@@ -118,7 +118,7 @@ LogicalResult ReduceOpShapeInference(
 
   auto valueShape = value.getShape();
 
-  axis = axis > 0 ? rank - axis : rank + axis;
+  axis = axis >= 0 ? axis : rank + axis;
 
   SmallVector<int64_t> resultShape;
 
