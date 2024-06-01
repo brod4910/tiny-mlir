@@ -16,8 +16,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
-#include <sys/_types/_int32_t.h>
-#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
