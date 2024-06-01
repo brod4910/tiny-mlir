@@ -128,14 +128,15 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
 --------------------------------------------------- */
 
 class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_Tensor: $value, I32Attr: $axis);
+  let arguments = (ins Tiny_Tensor: $value, 
+                   DefaultValuedAttr<I32Attr, "0">: $axis);
   let results = (outs Tiny_Tensor: $result);
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
 def Tiny_MaxOp : Tiny_ReduceOp<"max", [
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypes"]>,
+                                       InferTensorTypeAdaptor,
                                        Pure,
                                       ]> {
   let summary = "Max value along the axis.";
@@ -146,7 +147,7 @@ def Tiny_MaxOp : Tiny_ReduceOp<"max", [
 }
 
 def Tiny_SumOp : Tiny_ReduceOp<"sum", [
-                                       DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypes"]>,
+                                       InferTensorTypeAdaptor,
                                        Pure,
                                       ]> {
   let summary = "Sum along the axis.";
@@ -160,6 +161,7 @@ def Tiny_SumOp : Tiny_ReduceOp<"sum", [
 --------------------------------------------------- 
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
+
 // TODO: Explore elementwise mappable trait for broadcasted
 // tensors
 

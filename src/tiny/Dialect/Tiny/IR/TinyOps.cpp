@@ -12,14 +12,14 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
+#include <sys/_types/_int32_t.h>
+#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
-
-#include <__algorithm/remove_if.h>
-#include <optional>
 
 namespace mlir::tiny {
 /*
@@ -106,30 +106,27 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 --------------------------------------------------- */
 
 LogicalResult ReduceOpShapeInference(
-    ValueShapeRange operands,
+    RankedTensorType value, int32_t axis,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
 
-  auto value = operands.getValueAsShape(0);
-  auto axis = dyn_cast<IntegerAttr>(operands.getValues().back());
-
   auto rank = value.getRank();
-  auto ax = axis.getInt();
 
   // Bounds check for -/+ axis
-  if (rank + ax < 0 || ax >= rank) {
+  if (rank + axis < 0 || axis >= rank) {
     return failure();
   }
 
+  auto valueShape = value.getShape();
+
+  axis = axis > 0 ? rank - axis : rank + axis;
+
   SmallVector<int64_t> resultShape;
-  value.getDims(resultShape);
 
-  auto it = resultShape.begin();
-
-  if (ax < 0) {
-    it = resultShape.end();
+  for (int i = 0; i < valueShape.size(); ++i) {
+    if (i != axis) {
+      resultShape.push_back(valueShape[i]);
+    }
   }
-
-  resultShape.erase(it + ax);
 
   inferredReturnShapes.emplace_back(ArrayRef(resultShape),
                                     value.getElementType());
@@ -137,21 +134,25 @@ LogicalResult ReduceOpShapeInference(
   return success();
 }
 
-// LogicalResult MaxOp::inferReturnTypeComponents(
-//     MLIRContext *context, std::optional<Location> location,
-//     ValueShapeRange operands, DictionaryAttr attributes,
-//     OpaqueProperties properties, RegionRange regions,
-//     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-//   return ReduceOpShapeInference(operands, inferredReturnShapes);
-// }
+LogicalResult MaxOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    MaxOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto value = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto axis = adaptor.getAxis();
 
-// LogicalResult SumOp::inferReturnTypeComponents(
-//     MLIRContext *context, std::optional<Location> location,
-//     ValueShapeRange operands, DictionaryAttr attributes,
-//     OpaqueProperties properties, RegionRange regions,
-//     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-//   return ReduceOpShapeInference(operands, inferredReturnShapes);
-// }
+  return ReduceOpShapeInference(value, axis, inferredReturnShapes);
+}
+
+LogicalResult SumOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    SumOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto value = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto axis = adaptor.getAxis();
+
+  return ReduceOpShapeInference(value, axis, inferredReturnShapes);
+}
 
 /*
 ---------------------------------------------------
