@@ -177,7 +177,8 @@ def Tiny_AddOp : Tiny_BinaryOp<"add", [
                                        Commutative,
                                        Pure,
                                        ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType]> {
+                                       SameOperandsAndResultElementType
+                                      ]> {
   let summary = "Add two tensors";
   
   let description = [{
@@ -189,7 +190,8 @@ def Tiny_SubOp : Tiny_BinaryOp<"sub", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Pure, 
                                        ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType]> {
+                                       SameOperandsAndResultElementType
+                                      ]> {
   let summary = "Subtract two tensors";
   
   let description = [{
@@ -202,7 +204,8 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
                                        Commutative,
                                        Pure,
                                        ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType]> {
+                                       SameOperandsAndResultElementType
+                                      ]> {
   let summary = "Multiply two tensors";
   
   let description = [{
@@ -214,7 +217,8 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Pure, 
                                        ResultsBroadcastableShape, 
-                                       SameOperandsAndResultElementType]> {
+                                       SameOperandsAndResultElementType
+                                      ]> {
   let summary = "Divide two tensors";
   
   let description = [{
@@ -226,7 +230,8 @@ def Tiny_CmpEqOp : Tiny_BinaryOp<"cmpeq", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                            Pure, 
                                            ResultsBroadcastableShape, 
-                                           SameOperandsAndResultElementType]> {
+                                           SameOperandsAndResultElementType
+                                          ]> {
   let summary = "Compares whether the values in the tensor are equal";
   
   let description = [{
@@ -238,7 +243,8 @@ def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                            Pure, 
                                            ResultsBroadcastableShape, 
-                                           SameOperandsAndResultElementType]> {
+                                           SameOperandsAndResultElementType
+                                          ]> {
   let summary = "Compares whether the values in the tensor are less-than";
   
   let description = [{
@@ -251,7 +257,8 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
                                                Pure, 
                                                Commutative,
                                                ResultsBroadcastableShape, 
-                                               SameOperandsAndResultElementType]> {
+                                               SameOperandsAndResultElementType
+                                              ]> {
   let summary = "Take the max of the two tensors";
   
   let description = [{
@@ -267,6 +274,42 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 --------------------------------------------------- 
 ------------------ TERNARY OPS --------------------
 --------------------------------------------------- */
+
+class Tiny_TernaryOp<string mnemonic, list<Trait> traits = []> :  Tiny_Op<mnemonic, traits> {
+  let arguments = (ins Tiny_Tensor: $a, 
+                       Tiny_Tensor: $b, 
+                       Tiny_Tensor: $c);
+
+  let results = (outs Tiny_Tensor: $result);
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_WhereOp : Tiny_TernaryOp<"where", [
+                                            InferTensorTypeAdaptor,
+                                            Pure
+                                           ]> {
+  // override args since they have more semantic meaning for where ops.
+  let arguments = (ins Tiny_Tensor: $condition, 
+                       Tiny_Tensor: $input, 
+                       Tiny_Tensor: $other);
+  let summary = "Produces a tensor of input or other depending on condition";
+
+  let description = [{
+    An operation that produces a tensor depending on the condition tensor.
+    Taking elements from input or other if true or false.
+  }];
+}
+
+def Tiny_MulAccOp : Tiny_TernaryOp<"mulacc", [
+                                              InferTensorTypeAdaptor,
+                                              Pure
+                                             ]> {
+  let summary = "Computes a multiply-accumulate operation in the form of: (a * b) + c";
+
+  let description = [{
+    An operation that computes the multiply-accumulate operation.
+  }];
+}
 
 /* 
 --------------------------------------------------- 
