@@ -134,6 +134,8 @@ LogicalResult ReduceOpShapeInference(
   return success();
 }
 
+/* ------------------ Max Op ------------------- */
+
 LogicalResult MaxOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     MaxOpAdaptor adaptor,
@@ -143,6 +145,8 @@ LogicalResult MaxOp::inferReturnTypeComponents(
 
   return ReduceOpShapeInference(value, axis, inferredReturnShapes);
 }
+
+/* ------------------ Sum Op ------------------- */
 
 LogicalResult SumOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -256,6 +260,8 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
 ------------------ TERNARY OPS --------------------
 --------------------------------------------------- */
 
+/* ------------------ Where Op ------------------- */
+
 LogicalResult WhereOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     WhereOpAdaptor adaptor,
@@ -284,6 +290,8 @@ LogicalResult WhereOp::inferReturnTypeComponents(
 
   return success();
 }
+
+/* ------------------ MulAcc Op ------------------- */
 
 LogicalResult MulAccOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
