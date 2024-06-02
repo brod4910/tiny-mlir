@@ -16,6 +16,8 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
+#include <_types/_uint64_t.h>
+#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
@@ -239,7 +241,7 @@ LogicalResult CmpLtOp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
-/* ------------------ Max Op ---------------------- */
+/* ------------------ Maximum Op ---------------------- */
 
 LogicalResult MaximumOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -247,6 +249,51 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/*
+---------------------------------------------------
+------------------ TERNARY OPS --------------------
+--------------------------------------------------- */
+
+LogicalResult WhereOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    WhereOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto conditionType =
+      dyn_cast<RankedTensorType>(adaptor.getCondition().getType());
+  auto inputType = dyn_cast<RankedTensorType>(adaptor.getInput().getType());
+  auto otherType = dyn_cast<RankedTensorType>(adaptor.getOther().getType());
+
+  auto shapes = ArrayRef({SmallVector<int64_t>(conditionType.getShape()),
+                          SmallVector<int64_t>(inputType.getShape()),
+                          SmallVector<int64_t>(otherType.getShape())});
+
+  return success(OpTrait::util::staticallyKnownBroadcastable(shapes));
+}
+
+LogicalResult MulAccOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    MulAccOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto conditionType = dyn_cast<RankedTensorType>(adaptor.getA().getType());
+  auto inputType = dyn_cast<RankedTensorType>(adaptor.getB().getType());
+  auto otherType = dyn_cast<RankedTensorType>(adaptor.getC().getType());
+
+  auto shapes = ArrayRef({SmallVector<int64_t>(conditionType.getShape()),
+                          SmallVector<int64_t>(inputType.getShape()),
+                          SmallVector<int64_t>(otherType.getShape())});
+
+  if (!OpTrait::util::staticallyKnownBroadcastable(shapes)) {
+    return failure();
+  }
+
+  SmallVector<int64_t> resultShape;
+  OpTrait::util::getBroadcastedShape(inputType.getShape(), otherType.getShape(),
+                                     resultShape);
+  inferredReturnShapes.emplace_back(resultShape, inputType.getElementType());
+
+  return success();
 }
 
 /*
