@@ -269,20 +269,9 @@ LogicalResult WhereOp::inferReturnTypeComponents(
                           SmallVector<int64_t>(inputType.getShape()),
                           SmallVector<int64_t>(otherType.getShape())});
 
-  return success(OpTrait::util::staticallyKnownBroadcastable(shapes));
-}
-
-LogicalResult MulAccOp::inferReturnTypeComponents(
-    MLIRContext *context, std::optional<Location> location,
-    MulAccOpAdaptor adaptor,
-    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  auto conditionType = dyn_cast<RankedTensorType>(adaptor.getA().getType());
-  auto inputType = dyn_cast<RankedTensorType>(adaptor.getB().getType());
-  auto otherType = dyn_cast<RankedTensorType>(adaptor.getC().getType());
-
-  auto shapes = ArrayRef({SmallVector<int64_t>(conditionType.getShape()),
-                          SmallVector<int64_t>(inputType.getShape()),
-                          SmallVector<int64_t>(otherType.getShape())});
+  if (inputType.getElementType() != otherType.getElementType()) {
+    return failure();
+  }
 
   if (!OpTrait::util::staticallyKnownBroadcastable(shapes)) {
     return failure();
@@ -292,6 +281,35 @@ LogicalResult MulAccOp::inferReturnTypeComponents(
   OpTrait::util::getBroadcastedShape(inputType.getShape(), otherType.getShape(),
                                      resultShape);
   inferredReturnShapes.emplace_back(resultShape, inputType.getElementType());
+
+  return success();
+}
+
+LogicalResult MulAccOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    MulAccOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto aType = dyn_cast<RankedTensorType>(adaptor.getA().getType());
+  auto bType = dyn_cast<RankedTensorType>(adaptor.getB().getType());
+  auto cType = dyn_cast<RankedTensorType>(adaptor.getC().getType());
+
+  auto shapes = ArrayRef({SmallVector<int64_t>(aType.getShape()),
+                          SmallVector<int64_t>(bType.getShape()),
+                          SmallVector<int64_t>(cType.getShape())});
+
+  if (aType.getElementType() != bType.getElementType() ||
+      aType.getElementType() != cType.getElementType()) {
+    return failure();
+  }
+
+  if (!OpTrait::util::staticallyKnownBroadcastable(shapes)) {
+    return failure();
+  }
+
+  SmallVector<int64_t> resultShape;
+  OpTrait::util::getBroadcastedShape(bType.getShape(), cType.getShape(),
+                                     resultShape);
+  inferredReturnShapes.emplace_back(resultShape, bType.getElementType());
 
   return success();
 }
