@@ -265,10 +265,51 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
     An operation that takes the max of the two input tensors element-wise
   }];
 }
+
 /* 
 --------------------------------------------------- 
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
+
+/* 
+--------------------------------------------------- 
+------------------- BUFFER OPS --------------------
+--------------------------------------------------- */
+
+class Tiny_BufferOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
+
+class Tiny_LoadOp : Tiny_BufferOp<"load", [AllTypesMatch<["value", "result"]>]> {
+  let arguments = (ins Arg<ElementsAttrInterface, "source to load from",
+                           [MemRead]>: $value,
+                       Variadic<Index>: $indices);
+  let results = (outs Tiny_Tensor: $result);
+
+  let summary = "Load value into memory";
+
+  let description = [{
+    Loads a value into a mutable address space.
+  }];
+
+  let assemblyFormat = "$value `[` $indices `]` attr-dict : type(value)"
+}
+
+class Tiny_StoreOp : Tiny_BufferOp<"store", []> {
+  let arguments = (ins Arg<Tiny_Tensor, "tensor to store ", 
+                           [MemRead]>: $value,
+                        Arg<Tiny_Tensor, "target reference to store to", 
+                            [MemWrite]>: $dest,
+                        Variadic<Index>: $indices
+                       );
+  let results = (outs);
+
+  let summary = "Store value into memory";
+
+  let description = [{
+    Stores a value into a mutable address space.
+  }];
+
+  let assemblyFormat = "$value `,` $dest `[` $indices `]` attr-dict : type(dest)"
+}
 
 /* 
 --------------------------------------------------- 
