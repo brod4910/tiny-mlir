@@ -278,8 +278,11 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 
 class Tiny_BufferOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
 
-class Tiny_LoadOp : Tiny_BufferOp<"load", [AllTypesMatch<["value", "result"]>]> {
-  let arguments = (ins Arg<ElementsAttrInterface, "source to load from",
+def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
+                                         /* MemRefsNormalizable,*/
+                                         PredOpTrait<"tensor and result have same element type",
+                                            TCresVTEtIsSameAsOp<0, 0>>]> {
+  let arguments = (ins Arg<Tiny_Tensor, "source to load from",
                            [MemRead]>: $value,
                        Variadic<Index>: $indices);
   let results = (outs Tiny_Tensor: $result);
@@ -290,16 +293,14 @@ class Tiny_LoadOp : Tiny_BufferOp<"load", [AllTypesMatch<["value", "result"]>]> 
     Loads a value into a mutable address space.
   }];
 
-  let assemblyFormat = "$value `[` $indices `]` attr-dict : type(value)"
+  let assemblyFormat = "$value `[` $indices `]` attr-dict `:` type($value)";
 }
 
-class Tiny_StoreOp : Tiny_BufferOp<"store", []> {
-  let arguments = (ins Arg<Tiny_Tensor, "tensor to store ", 
-                           [MemRead]>: $value,
+def Tiny_StoreOp : Tiny_BufferOp<"store", []> {
+  let arguments = (ins  Tiny_Tensor:$value,
                         Arg<Tiny_Tensor, "target reference to store to", 
                             [MemWrite]>: $dest,
-                        Variadic<Index>: $indices
-                       );
+                        Variadic<Index>: $indices);
   let results = (outs);
 
   let summary = "Store value into memory";
@@ -308,7 +309,10 @@ class Tiny_StoreOp : Tiny_BufferOp<"store", []> {
     Stores a value into a mutable address space.
   }];
 
-  let assemblyFormat = "$value `,` $dest `[` $indices `]` attr-dict : type(dest)"
+  // TODO: investigate why Op trait for infering type of $value not working.
+  let assemblyFormat = [{
+    $value `,` $dest `[` $indices `]` attr-dict `:` type($value) `,` type($dest)
+  }];
 }
 
 /* 
