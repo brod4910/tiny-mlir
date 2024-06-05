@@ -118,6 +118,7 @@ LogicalResult ReduceOpShapeInference(
 
   auto valueShape = value.getShape();
 
+  // Get real axis. Rank + (-axis) = real axis
   axis = axis >= 0 ? axis : rank + axis;
 
   SmallVector<int64_t> resultShape;
@@ -253,6 +254,26 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/*
+---------------------------------------------------
+-------------------- LOAD OPS ---------------------
+--------------------------------------------------- */
+
+/*
+---------------------------------------------------
+------------------- BUFFER OPS --------------------
+--------------------------------------------------- */
+
+LogicalResult LoadOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    LoadOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto value = adaptor.getValue().getType();
+  auto indices = adaptor.getIndices();
+
+  return success();
 }
 
 /*
