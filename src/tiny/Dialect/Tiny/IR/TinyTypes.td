@@ -29,7 +29,4 @@ class Tiny_Type<string name, list<Trait> traits = [],
     let mnemonic = ?;
 }
 
-
-
-
 #endif // TINY_TYPES

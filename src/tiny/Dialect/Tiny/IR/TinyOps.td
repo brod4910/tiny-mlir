@@ -2,8 +2,8 @@
 #define TINY_OPS
 
 
-include "TinyDialect.td"
-include "TinyTypes.td"
+include "tiny/Dialect/Tiny/IR/TinyDialect.td"
+include "tiny/Dialect/Tiny/IR/TinyTypes.td"
 
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
@@ -17,6 +17,7 @@ include "mlir/IR/CommonTypeConstraints.td"
 include "mlir/IR/OpBase.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/SymbolInterfaces.td"
+
 
 
 class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnemonic, traits>;

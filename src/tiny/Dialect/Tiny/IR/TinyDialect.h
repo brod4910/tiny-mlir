@@ -14,3 +14,6 @@
 
 #define GET_TYPEDEF_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyTypes.h.inc"
+
+#define GET_TYPEDEF_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyAttrs.h.inc"

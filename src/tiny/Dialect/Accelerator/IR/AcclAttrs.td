@@ -1,9 +1,7 @@
 #ifndef ACCL_ATTRS
 #define ACCL_ATTRS
 
-include "tiny/Dialect/Tiny/IR/TinyTypes.td"
-
-include "AcclDialect.td"
+include "tiny/Dialect/Accelerator/IR/AcclDialect.td"
 
 include "mlir/IR/AttrTypeBase.td"
 
