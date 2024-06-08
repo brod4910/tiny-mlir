@@ -11,14 +11,14 @@ add_public_tablegen_target(TinyOpIncGen)
 add_dependencies(mlir-headers TinyOpIncGen)
 
 set(LLVM_TARGET_DEFINITIONS TinyTypes.td)
-mlir_tablegen(TinyTypes.h.inc -gen-typedef-decls -typedefs-dialect=tiny)
-mlir_tablegen(TinyTypes.cpp.inc -gen-typedef-decls -typedefs-dialect=tiny)
+mlir_tablegen(TinyTypes.h.inc -gen-typedef-decls)
+mlir_tablegen(TinyTypes.cpp.inc -gen-typedef-defs)
 add_public_tablegen_target(TinyTypesIncGen)
 add_dependencies(mlir-headers TinyTypesIncGen)
 
 set(LLVM_TARGET_DEFINITIONS TinyAttrs.td)
-mlir_tablegen(TinyAttrs.h.inc -gen-attrdef-decls -attrdefs-dialect=tiny)
-mlir_tablegen(TinyAttrs.cpp.inc -gen-attrdef-decls -attrdefs-dialect=tiny)
+mlir_tablegen(TinyAttrs.h.inc -gen-attrdef-decls)
+mlir_tablegen(TinyAttrs.cpp.inc -gen-attrdef-defs)
 add_public_tablegen_target(TinyAttrsIncGen)
 add_dependencies(mlir-headers TinyAttrsIncGen)
 

@@ -13,19 +13,11 @@ class Tiny_Attr<string name, list<Trait> traits = []>
 
 // Note: Syntatic sugar that will get transformed into
 // an affine map. Mostly just for ease of use in the IR.
-def SliceAttr : Tiny_Attr<"Slice", []> {  
-  let parameters = (ins OptionalParameter<"signed">: $start,
-                        OptionalParameter<"signed">: $end,
-                        OptionalParameter<"signed">: $stride);
+def SliceAttr : Tiny_Attr<"Slice"> {  
+  let parameters = (ins "int": $start,
+                        OptionalParameter<"int">: $end,
+                        OptionalParameter<"int">: $stride);
   let mnemonic = "slice";
-  
-  let builders = [
-    AttrBuilder<(ins "int64_t":$start,
-                     "int64_t":$end,
-                     "int64_t":$stride), [{
-        return $_get(context, {start}, {end}, {stride});
-    }]>
-  ];
 
   let assemblyFormat = "`<` struct(params) `>`";  
 
