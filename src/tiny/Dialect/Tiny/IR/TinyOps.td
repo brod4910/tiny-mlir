@@ -4,6 +4,7 @@
 
 include "tiny/Dialect/Tiny/IR/TinyDialect.td"
 include "tiny/Dialect/Tiny/IR/TinyTypes.td"
+include "tiny/Dialect/Tiny/IR/TinyAttrs.td"
 
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
@@ -31,6 +32,20 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- 
 -------------------- Traits -----------------------
 --------------------------------------------------- */
+
+/* 
+--------------------------------------------------- 
+------------------ UTILITY OPS --------------------
+--------------------------------------------------- */
+
+def Tiny_SliceOp : Tiny_Op<"slice"> {
+    let arguments = (ins I32Attr:$start,
+                         OptionalAttr<I32Attr>:$end,
+                         OptionalAttr<I32Attr>:$stride);
+    let results = (outs Tiny_SliceType:$result);
+
+    let hasCustomAssemblyFormat = 1;
+}
 
 /* 
 --------------------------------------------------- 
@@ -285,7 +300,7 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
                                             TCresVTEtIsSameAsOp<0, 0>>]> {
   let arguments = (ins Arg<Tiny_Tensor, "source to load from",
                            [MemRead]>: $value,
-                       Variadic<Index>: $indices);
+                       Tiny_SliceType:$slice);
   let results = (outs Tiny_Tensor: $result);
 
   let summary = "Load value into memory";
@@ -294,7 +309,7 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
     Loads a value into a mutable address space.
   }];
 
-  let assemblyFormat = "$value `[` $indices `]` attr-dict `:` type($value)";
+  let assemblyFormat = "$value`[` $slice `]` attr-dict `:` functional-type(operands, results)";
 }
 
 def Tiny_StoreOp : Tiny_BufferOp<"store", []> {

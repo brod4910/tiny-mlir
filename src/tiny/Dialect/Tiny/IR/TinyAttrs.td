@@ -11,16 +11,5 @@ class Tiny_Attr<string name, list<Trait> traits = []>
   let cppNamespace = "::mlir::tiny";
 }
 
-// Note: Syntatic sugar that will get transformed into
-// an affine map. Mostly just for ease of use in the IR.
-def SliceAttr : Tiny_Attr<"Slice"> {  
-  let parameters = (ins "int": $start,
-                        OptionalParameter<"int">: $end,
-                        OptionalParameter<"int">: $stride);
-  let mnemonic = "slice";
-
-  let assemblyFormat = "`<` struct(params) `>`";  
-
-}
 
 #endif // TINY_ATTRS

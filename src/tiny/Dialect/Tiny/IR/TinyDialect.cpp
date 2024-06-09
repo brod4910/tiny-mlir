@@ -7,19 +7,20 @@
 
 #include "mlir/IR/Types.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/Support/MathExtras.h"
 #include <sys/_types/_int64_t.h>
 
 #include "mlir/Support/LogicalResult.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.cpp.inc"
-
-#define GET_OP_CLASSES
-#include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
 #define GET_TYPEDEF_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyTypes.cpp.inc"
 
 #define GET_ATTRDEF_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyAttrs.cpp.inc"
+
+#define GET_OP_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyOps.cpp.inc"
 
 namespace mlir::tiny {
 
@@ -43,25 +44,52 @@ Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
   return ConstantOp::materialize(builder, value, type, loc);
 }
 
-// Copied from ACCL dialect.
-static LogicalResult parseIntAttrValue(AsmParser &parser,
-                                       const NamedAttribute &attr, int &value,
-                                       StringRef desc) {
-  auto intAttr = dyn_cast<IntegerAttr>(attr.getValue());
-  if (!intAttr) {
-    parser.emitError(parser.getNameLoc(), "expected an integer type in ")
-        << desc;
-    return failure();
+void SliceType::print(AsmPrinter &printer) const {
+  int defaultNum = llvm::maxIntN(32);
+
+  auto start = getStart();
+  auto end = getEnd();
+  auto stride = getStride();
+
+  printer << "[" << start << ":";
+
+  if (end != defaultNum) {
+    printer << end;
   }
-  if (intAttr.getType().isSignedInteger()) {
-    int64_t attrVal = intAttr.getSInt();
-    value = attrVal;
-  } else if (intAttr.getType().isSignlessInteger()) {
-    int64_t attrVal = intAttr.getInt();
-    value = attrVal;
-  } else {
-    value = intAttr.getUInt();
+
+  printer << ":";
+
+  if (stride != defaultNum) {
+    printer << stride;
   }
-  return success();
+
+  printer << "]";
+}
+
+Type SliceType::parse(AsmParser &parser) {
+  int defaultNum = llvm::maxIntN(32);
+  int start, end = defaultNum, stride = defaultNum;
+
+  if (parser.parseRSquare().failed()) {
+    return {};
+  }
+
+  if (parser.parseInteger(start).failed() || parser.parseColon().failed()) {
+    return {};
+  }
+
+  auto endParsed = parser.parseInteger(end);
+
+  if (parser.parseColon().failed()) {
+    return {};
+  }
+
+  auto strideParsed = parser.parseInteger(stride);
+
+  if (parser.parseLSquare().failed()) {
+    return {};
+  }
+
+  return parser.getChecked<SliceType>(parser.getContext(), start, end, stride);
 }
 } // namespace mlir::tiny

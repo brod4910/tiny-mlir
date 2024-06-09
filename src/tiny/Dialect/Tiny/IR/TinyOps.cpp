@@ -22,6 +22,61 @@
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
 namespace mlir::tiny {
+
+/*
+---------------------------------------------------
+------------------ UTILITY OPS --------------------
+--------------------------------------------------- */
+void SliceOp::print(OpAsmPrinter &printer) {
+  int defaultNum = llvm::maxIntN(32);
+
+  auto start = getStart();
+  auto end = getEnd();
+  auto stride = getStride();
+
+  printer << "[" << start << ":";
+
+  if (end != defaultNum) {
+    printer << end;
+  }
+
+  printer << ":";
+
+  if (stride != defaultNum) {
+    printer << stride;
+  }
+
+  printer << "]";
+}
+
+::mlir::ParseResult SliceOp::parse(::mlir::OpAsmParser &parser,
+                                   ::mlir::OperationState &result) {
+  int defaultNum = llvm::maxIntN(32);
+  int start, end = defaultNum, stride = defaultNum;
+
+  if (parser.parseRSquare().failed()) {
+    return {};
+  }
+
+  if (parser.parseInteger(start).failed() || parser.parseColon().failed()) {
+    return {};
+  }
+
+  auto endParsed = parser.parseInteger(end);
+
+  if (parser.parseColon().failed()) {
+    return {};
+  }
+
+  auto strideParsed = parser.parseInteger(stride);
+
+  if (parser.parseLSquare().failed()) {
+    return {};
+  }
+
+  return parser.getChecked<SliceOp>(parser.getContext(), start, end, stride);
+}
+
 /*
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------
@@ -271,7 +326,7 @@ LogicalResult LoadOp::inferReturnTypeComponents(
     LoadOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   auto value = adaptor.getValue().getType();
-  auto indices = adaptor.getIndices();
+  auto slice = adaptor.getSlice();
 
   return success();
 }
