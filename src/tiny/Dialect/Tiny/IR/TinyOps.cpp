@@ -2,6 +2,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
@@ -46,35 +47,37 @@ void SliceOp::print(OpAsmPrinter &printer) {
     printer << stride;
   }
 
-  printer << "]";
+  printer << "] -> " << getResult();
 }
 
-::mlir::ParseResult SliceOp::parse(::mlir::OpAsmParser &parser,
-                                   ::mlir::OperationState &result) {
-  int defaultNum = llvm::maxIntN(32);
-  int start, end = defaultNum, stride = defaultNum;
+ParseResult SliceOp::parse(::mlir::OpAsmParser &parser,
+                           ::mlir::OperationState &result) {
+  OpAsmParser::UnresolvedOperand start, end, stride;
+  Type resultType;
 
-  if (parser.parseRSquare().failed()) {
+  if (parser.parseLSquare().failed() || parser.parseOperand(start).failed() ||
+      parser.parseColon().failed()) {
     return {};
   }
 
-  if (parser.parseInteger(start).failed() || parser.parseColon().failed()) {
-    return {};
-  }
-
-  auto endParsed = parser.parseInteger(end);
+  parser.parseOptionalOperand(end);
 
   if (parser.parseColon().failed()) {
     return {};
   }
 
-  auto strideParsed = parser.parseInteger(stride);
+  parser.parseOptionalOperand(stride);
 
-  if (parser.parseLSquare().failed()) {
+  if (parser.parseRSquare().failed() ||
+      parser.parseOptionalAttrDict(result.attributes).failed() ||
+      parser.parseArrow().failed() || parser.parseType(resultType).failed()) {
     return {};
   }
 
-  return parser.getChecked<SliceOp>(parser.getContext(), start, end, stride);
+  auto I32Type = parser.getBuilder().getI32Type();
+
+  return parser.resolveOperands({start, end, stride}, I32Type,
+                                parser.getNameLoc(), result.operands);
 }
 
 /*

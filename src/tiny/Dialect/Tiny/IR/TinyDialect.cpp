@@ -70,7 +70,7 @@ Type SliceType::parse(AsmParser &parser) {
   int defaultNum = llvm::maxIntN(32);
   int start, end = defaultNum, stride = defaultNum;
 
-  if (parser.parseRSquare().failed()) {
+  if (parser.parseLSquare().failed()) {
     return {};
   }
 
@@ -86,7 +86,7 @@ Type SliceType::parse(AsmParser &parser) {
 
   auto strideParsed = parser.parseInteger(stride);
 
-  if (parser.parseLSquare().failed()) {
+  if (parser.parseRSquare().failed()) {
     return {};
   }
 
