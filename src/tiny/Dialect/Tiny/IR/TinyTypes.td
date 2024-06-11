@@ -37,7 +37,7 @@ def Tiny_SliceType : Tiny_Type<"Slice"> {
                         OptionalParameter<"int">: $stride);
   let mnemonic = "slice";
 
-  let hasCustomAssemblyFormat = 1;
+    let assemblyFormat =  "`<` $start (`,` $end^)? (`,` $stride^)? `>`"
 
 }
 

@@ -28,57 +28,44 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ------------------ UTILITY OPS --------------------
 --------------------------------------------------- */
-void SliceOp::print(OpAsmPrinter &printer) {
-  int defaultNum = llvm::maxIntN(32);
+// void SliceOp::print(OpAsmPrinter &printer) {
+//   auto start = getStart();
+//   auto end = getEnd();
+//   auto stride = getStride();
 
-  auto start = getStart();
-  auto end = getEnd();
-  auto stride = getStride();
+//   printer << "[" << start;
 
-  printer << "[" << start << ":";
+//   if (end) {
+//     printer << "," << end;
+//   }
 
-  if (end != defaultNum) {
-    printer << end;
-  }
+//   if (stride) {
+//     printer << "," << stride;
+//   }
 
-  printer << ":";
+//   printer << "] : " << getResult();
+// }
 
-  if (stride != defaultNum) {
-    printer << stride;
-  }
+// ParseResult SliceOp::parse(::mlir::OpAsmParser &parser,
+//                            ::mlir::OperationState &result) {
+//   llvm::SmallVector<OpAsmParser::UnresolvedOperand, 3> operands;
+//   Type resultType;
 
-  printer << "] -> " << getResult();
-}
+//   if (parser.parseOperandList(operands, 1, OpAsmParser::Delimiter::Square)
+//           .failed()) {
+//     return {};
+//   }
 
-ParseResult SliceOp::parse(::mlir::OpAsmParser &parser,
-                           ::mlir::OperationState &result) {
-  OpAsmParser::UnresolvedOperand start, end, stride;
-  Type resultType;
+//   if (parser.parseOptionalAttrDict(result.attributes).failed() ||
+//       parser.parseColonType(resultType).failed()) {
+//     return {};
+//   }
 
-  if (parser.parseLSquare().failed() || parser.parseOperand(start).failed() ||
-      parser.parseColon().failed()) {
-    return {};
-  }
-
-  parser.parseOptionalOperand(end);
-
-  if (parser.parseColon().failed()) {
-    return {};
-  }
-
-  parser.parseOptionalOperand(stride);
-
-  if (parser.parseRSquare().failed() ||
-      parser.parseOptionalAttrDict(result.attributes).failed() ||
-      parser.parseArrow().failed() || parser.parseType(resultType).failed()) {
-    return {};
-  }
-
-  auto I32Type = parser.getBuilder().getI32Type();
-
-  return parser.resolveOperands({start, end, stride}, I32Type,
-                                parser.getNameLoc(), result.operands);
-}
+//   auto I32Type = parser.getBuilder().getI32Type();
+//   result.addTypes(resultType);
+//   return parser.resolveOperands(operands, I32Type, parser.getNameLoc(),
+//                                 result.operands);
+// }
 
 /*
 ---------------------------------------------------

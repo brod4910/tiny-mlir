@@ -44,52 +44,48 @@ Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
   return ConstantOp::materialize(builder, value, type, loc);
 }
 
-void SliceType::print(AsmPrinter &printer) const {
-  int defaultNum = llvm::maxIntN(32);
+// void SliceType::print(AsmPrinter &printer) const {
+//   int defaultNum = llvm::maxIntN(32);
 
-  auto start = getStart();
-  auto end = getEnd();
-  auto stride = getStride();
+//   auto start = getStart();
+//   auto end = getEnd();
+//   auto stride = getStride();
 
-  printer << "[" << start << ":";
+//   printer << "[" << start;
 
-  if (end != defaultNum) {
-    printer << end;
-  }
+//   if (end != defaultNum) {
+//     printer << "," << end;
+//   }
 
-  printer << ":";
+//   if (stride != defaultNum) {
+//     printer << "," << stride;
+//   }
 
-  if (stride != defaultNum) {
-    printer << stride;
-  }
+//   printer << "]";
+// }
 
-  printer << "]";
-}
+// Type SliceType::parse(AsmParser &parser) {
+//   int defaultNum = llvm::maxIntN(32);
+//   int start, end = defaultNum, stride = defaultNum;
 
-Type SliceType::parse(AsmParser &parser) {
-  int defaultNum = llvm::maxIntN(32);
-  int start, end = defaultNum, stride = defaultNum;
+//   if (parser.parseLSquare().failed() || parser.parseInteger(start).failed())
+//   {
+//     return {};
+//   }
 
-  if (parser.parseLSquare().failed()) {
-    return {};
-  }
+//   if (parser.parseOptionalComma().succeeded()) {
+//     auto endParsed = parser.parseInteger(end);
+//   }
 
-  if (parser.parseInteger(start).failed() || parser.parseColon().failed()) {
-    return {};
-  }
+//   if (parser.parseOptionalComma().succeeded()) {
+//     auto strideParsed = parser.parseInteger(stride);
+//   }
 
-  auto endParsed = parser.parseInteger(end);
+//   if (parser.parseRSquare().failed()) {
+//     return {};
+//   }
 
-  if (parser.parseColon().failed()) {
-    return {};
-  }
-
-  auto strideParsed = parser.parseInteger(stride);
-
-  if (parser.parseRSquare().failed()) {
-    return {};
-  }
-
-  return parser.getChecked<SliceType>(parser.getContext(), start, end, stride);
-}
+//   return parser.getChecked<SliceType>(parser.getContext(), start, end,
+//   stride);
+// }
 } // namespace mlir::tiny

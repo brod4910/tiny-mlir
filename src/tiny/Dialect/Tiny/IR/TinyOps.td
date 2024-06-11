@@ -38,13 +38,17 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 ------------------ UTILITY OPS --------------------
 --------------------------------------------------- */
 
-def Tiny_SliceOp : Tiny_Op<"slice"> {
-    let arguments = (ins I32Attr:$start,
-                         OptionalAttr<I32Attr>:$end,
-                         OptionalAttr<I32Attr>:$stride);
+def Tiny_SliceOp : Tiny_Op<"slice", [AttrSizedOperandSegments]> {
+    let arguments = (ins I32:$start,
+                         Optional<I32>:$end,
+                         Optional<I32>:$stride);
     let results = (outs Tiny_SliceType:$result);
 
-    let hasCustomAssemblyFormat = 1;
+    // let hasCustomAssemblyFormat = 1;
+    let assemblyFormat = [{ 
+      `[` $start (`,` $end^)? (`,` $stride^)? `]` attr-dict `:` 
+        `(` type($start) (`,` type($end)^)? (`,` type($stride)^)? `)` `->` type($result)
+    }];
 }
 
 /* 
