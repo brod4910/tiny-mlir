@@ -30,6 +30,16 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ------------------ UTILITY OPS --------------------
 --------------------------------------------------- */
+LogicalResult SliceOp::verify() {
+  auto start = getStart();
+  auto end = getEnd();
+  auto stride = getStride();
+
+  auto result = getResult().getType();
+  auto resStart = result.getStart();
+  auto resEnd = result.getEnd();
+  auto resStride = result.getStride();
+}
 
 /*
 ---------------------------------------------------

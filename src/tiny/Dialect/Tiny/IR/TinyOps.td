@@ -44,10 +44,22 @@ def Tiny_SliceOp : Tiny_Op<"slice", [AttrSizedOperandSegments]> {
                          Optional<I32>:$stride);
     let results = (outs Tiny_SliceType:$result);
 
+    // Note: In essence:
+    // if (start) {
+    //    print or parse
+    //    if (end) {
+    //      print or parse
+    //      if (stride) {
+    //        print or parse
+    //      }
+    //    }
+    // }
     let assemblyFormat = [{ 
-      `[` ($start^)? (`,` $end^)? (`,` $stride^)? `]` attr-dict `:` 
-        `(` (type($start)^)? (`,` type($end)^)? (`,` type($stride)^)? `)` `->` type($result)
+      `[` ( $start^ (`,` $end^ (`,` $stride^)? )? )? `]` attr-dict `:` 
+        ( `(` type($start)^ (`,` type($end)^ (`,` type($stride)^)? )? `)` `->` )? type($result)
     }];
+
+    let hasVerifier = 1;
 }
 
 /* 
