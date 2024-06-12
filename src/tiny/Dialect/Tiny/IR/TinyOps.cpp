@@ -1,7 +1,9 @@
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Traits.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
@@ -28,44 +30,6 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ------------------ UTILITY OPS --------------------
 --------------------------------------------------- */
-// void SliceOp::print(OpAsmPrinter &printer) {
-//   auto start = getStart();
-//   auto end = getEnd();
-//   auto stride = getStride();
-
-//   printer << "[" << start;
-
-//   if (end) {
-//     printer << "," << end;
-//   }
-
-//   if (stride) {
-//     printer << "," << stride;
-//   }
-
-//   printer << "] : " << getResult();
-// }
-
-// ParseResult SliceOp::parse(::mlir::OpAsmParser &parser,
-//                            ::mlir::OperationState &result) {
-//   llvm::SmallVector<OpAsmParser::UnresolvedOperand, 3> operands;
-//   Type resultType;
-
-//   if (parser.parseOperandList(operands, 1, OpAsmParser::Delimiter::Square)
-//           .failed()) {
-//     return {};
-//   }
-
-//   if (parser.parseOptionalAttrDict(result.attributes).failed() ||
-//       parser.parseColonType(resultType).failed()) {
-//     return {};
-//   }
-
-//   auto I32Type = parser.getBuilder().getI32Type();
-//   result.addTypes(resultType);
-//   return parser.resolveOperands(operands, I32Type, parser.getNameLoc(),
-//                                 result.operands);
-// }
 
 /*
 ---------------------------------------------------
@@ -315,8 +279,11 @@ LogicalResult LoadOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     LoadOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  auto value = adaptor.getValue().getType();
-  auto slice = adaptor.getSlice();
+  auto value = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto slice = adaptor.getSlice().getType();
+
+  for (auto d : value.getShape()) {
+  }
 
   return success();
 }

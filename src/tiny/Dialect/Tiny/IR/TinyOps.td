@@ -39,15 +39,14 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- */
 
 def Tiny_SliceOp : Tiny_Op<"slice", [AttrSizedOperandSegments]> {
-    let arguments = (ins I32:$start,
+    let arguments = (ins Optional<I32>:$start,
                          Optional<I32>:$end,
                          Optional<I32>:$stride);
     let results = (outs Tiny_SliceType:$result);
 
-    // let hasCustomAssemblyFormat = 1;
     let assemblyFormat = [{ 
-      `[` $start (`,` $end^)? (`,` $stride^)? `]` attr-dict `:` 
-        `(` type($start) (`,` type($end)^)? (`,` type($stride)^)? `)` `->` type($result)
+      `[` ($start^)? (`,` $end^)? (`,` $stride^)? `]` attr-dict `:` 
+        `(` (type($start)^)? (`,` type($end)^)? (`,` type($stride)^)? `)` `->` type($result)
     }];
 }
 
@@ -304,7 +303,7 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
                                             TCresVTEtIsSameAsOp<0, 0>>]> {
   let arguments = (ins Arg<Tiny_Tensor, "source to load from",
                            [MemRead]>: $value,
-                       Tiny_SliceType:$slice);
+                       Variadic<Tiny_SliceType>:$slice);
   let results = (outs Tiny_Tensor: $result);
 
   let summary = "Load value into memory";
@@ -313,25 +312,26 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
     Loads a value into a mutable address space.
   }];
 
-  let assemblyFormat = "$value`[` $slice `]` attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_StoreOp : Tiny_BufferOp<"store", []> {
-  let arguments = (ins  Tiny_Tensor:$value,
+def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
+  let arguments = (ins  Tiny_Tensor:$src,
+                        Variadic<Tiny_SliceType>:$src_slice,
                         Arg<Tiny_Tensor, "target reference to store to", 
-                            [MemWrite]>: $dest,
-                        Variadic<Index>: $indices);
+                            [MemWrite]>: $dst,
+                        Variadic<Tiny_SliceType>:$dst_slice);
   let results = (outs);
 
-  let summary = "Store value into memory";
+  let summary = "Store src into memory";
 
   let description = [{
     Stores a value into a mutable address space.
   }];
 
-  // TODO: investigate why Op trait for infering type of $value not working.
+  // TODO: investigate why Op trait for infering type of $src not working.
   let assemblyFormat = [{
-    $value `,` $dest `[` $indices `]` attr-dict `:` type($value) `,` type($dest)
+    $src (`[` $src_slice^ `]`)? `,` $dst (`[` $dst_slice^ `]`)? attr-dict `:` functional-type(operands, results)
   }];
 }
 

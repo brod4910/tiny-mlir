@@ -32,12 +32,12 @@ class Tiny_Type<string name, list<Trait> traits = [],
 // Note: Syntatic sugar that will get transformed into
 // an affine map. Mostly just for ease of use in the IR.
 def Tiny_SliceType : Tiny_Type<"Slice"> {  
-  let parameters = (ins "int": $start,
+  let parameters = (ins OptionalParameter<"int">: $start,
                         OptionalParameter<"int">: $end,
                         OptionalParameter<"int">: $stride);
   let mnemonic = "slice";
 
-    let assemblyFormat =  "`<` $start (`,` $end^)? (`,` $stride^)? `>`"
+  let assemblyFormat =  "`<` ($start^)? (`,` $end^)? (`,` $stride^)? `>`";
 
 }
 
