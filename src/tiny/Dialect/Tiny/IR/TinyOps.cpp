@@ -30,15 +30,17 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ------------------ UTILITY OPS --------------------
 --------------------------------------------------- */
-LogicalResult SliceOp::verify() {
-  auto start = getStart();
-  auto end = getEnd();
-  auto stride = getStride();
 
-  auto result = getResult().getType();
-  auto resStart = result.getStart();
-  auto resEnd = result.getEnd();
-  auto resStride = result.getStride();
+LogicalResult SliceOp::inferReturnTypes(
+    MLIRContext *context, std::optional<Location> location, ValueRange operands,
+    DictionaryAttr attributes, OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<Type> &inferredReturnTypes) {
+
+  SmallVector<int, 3> slice;
+
+  for (auto operand : operands) {
+  }
+  return success();
 }
 
 /*

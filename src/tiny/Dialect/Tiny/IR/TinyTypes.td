@@ -47,7 +47,7 @@ def Tiny_SliceType : Tiny_Type<"Slice"> {
     //      }
     //    }
     // }
-    let assemblyFormat =  "( `<` $start^ (`,` $end^ (`,` $stride^)? )? `>`)?";
+    let assemblyFormat =  "`<` ( $start^ (`,` $end^ (`,` $stride^)? )? )? `>`";
 }
 
 #endif // TINY_TYPES
