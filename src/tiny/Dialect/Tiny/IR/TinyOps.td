@@ -40,9 +40,9 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 
 def Tiny_SliceOp : Tiny_Op<"slice", [AttrSizedOperandSegments,
                                      InferTypeOpAdaptor]> {
-    let arguments = (ins Optional<I32>:$start,
-                         Optional<I32>:$end,
-                         Optional<I32>:$stride);
+    let arguments = (ins Optional<Index>:$start,
+                         Optional<Index>:$end,
+                         Optional<Index>:$stride);
     let results = (outs Tiny_SliceType:$result);
 
     // Note: In essence:

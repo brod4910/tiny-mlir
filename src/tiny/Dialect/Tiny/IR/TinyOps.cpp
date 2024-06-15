@@ -1,3 +1,4 @@
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Traits.h"
 #include "mlir/IR/Builders.h"
@@ -19,8 +20,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
-#include <_types/_uint64_t.h>
-#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
@@ -31,15 +30,28 @@ namespace mlir::tiny {
 ------------------ UTILITY OPS --------------------
 --------------------------------------------------- */
 
+IntegerAttr getConstantOpValue(Value value) {
+  auto attr = value.getDefiningOp<arith::ConstantOp>().getValue();
+
+  return dyn_cast<IntegerAttr>(attr);
+}
+
 LogicalResult SliceOp::inferReturnTypes(
-    MLIRContext *context, std::optional<Location> location, ValueRange operands,
-    DictionaryAttr attributes, OpaqueProperties properties, RegionRange regions,
-    SmallVectorImpl<Type> &inferredReturnTypes) {
+    ::mlir::MLIRContext *context, std::optional<::mlir::Location> location,
+    SliceOpAdaptor adaptor,
+    ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+  int64_t start = 0, end = 0, stride = 0;
 
-  SmallVector<int, 3> slice;
-
-  for (auto operand : operands) {
+  if (auto startVal = adaptor.getStart()) {
+    start = getConstantOpValue(startVal).getInt();
+    if (auto endVal = adaptor.getEnd()) {
+      end = getConstantOpValue(endVal).getInt();
+      if (auto strideVal = adaptor.getStride()) {
+        stride = getConstantOpValue(strideVal).getInt();
+      }
+    }
   }
+  inferredReturnTypes.push_back(SliceType::get(context, start, end, stride));
   return success();
 }
 
