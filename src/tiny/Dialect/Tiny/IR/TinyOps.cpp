@@ -40,18 +40,13 @@ LogicalResult SliceOp::inferReturnTypes(
     ::mlir::MLIRContext *context, std::optional<::mlir::Location> location,
     SliceOpAdaptor adaptor,
     ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
-  int64_t start = 0, end = 0, stride = 0;
+  auto start = adaptor.getStart();
+  auto end = adaptor.getEnd();
+  auto stride = adaptor.getStride();
 
-  if (auto startVal = adaptor.getStart()) {
-    start = getConstantOpValue(startVal).getInt();
-    if (auto endVal = adaptor.getEnd()) {
-      end = getConstantOpValue(endVal).getInt();
-      if (auto strideVal = adaptor.getStride()) {
-        stride = getConstantOpValue(strideVal).getInt();
-      }
-    }
-  }
-  inferredReturnTypes.push_back(SliceType::get(context, start, end, stride));
+  inferredReturnTypes.push_back(SliceType::get(context, start.getSExtValue(),
+                                               end.getSExtValue(),
+                                               stride.getSExtValue()));
   return success();
 }
 
@@ -303,11 +298,39 @@ LogicalResult LoadOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     LoadOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  auto value = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
-  auto slice = adaptor.getSlice().getType();
+  auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto slice = adaptor.getSlice();
 
-  for (auto d : value.getShape()) {
+  auto shape = valueType.getShape();
+
+  SmallVector<int64_t> resultShape;
+
+  for (auto s : shape) {
+    auto dimSlice = dyn_cast<SliceType>(slice.take_front().front().getType());
+
+    auto start = dimSlice.getStart();
+    auto end = dimSlice.getEnd();
+    auto stride = dimSlice.getStride();
+
+    // TODO: check for default values for start = 0, end = -1
+    // rework these statements now that start, end, and stride have defaults.
+    if (!start.has_value()) {
+      start = 0;
+    }
+
+    if (!end.has_value()) {
+      end = s;
+    }
+
+    if (s <= *start && s > *end) {
+      return failure();
+    }
+
+    auto size = (*end - *start) / *stride;
+    resultShape.push_back(size);
   }
+
+  inferredReturnShapes.emplace_back(resultShape, valueType.getElementType());
 
   return success();
 }
