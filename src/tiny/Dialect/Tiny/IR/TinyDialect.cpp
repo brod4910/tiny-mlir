@@ -8,7 +8,6 @@
 #include "mlir/IR/Types.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/MathExtras.h"
-#include <sys/_types/_int64_t.h>
 
 #include "mlir/Support/LogicalResult.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.cpp.inc"

@@ -299,35 +299,36 @@ LogicalResult LoadOp::inferReturnTypeComponents(
     LoadOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
-  auto slice = adaptor.getSlice();
+  auto slices = adaptor.getSlice();
 
-  auto shape = valueType.getShape();
+  auto valueShape = valueType.getShape();
 
   SmallVector<int64_t> resultShape;
 
-  for (auto s : shape) {
-    auto dimSlice = dyn_cast<SliceType>(slice.take_front().front().getType());
+  for (auto [size, slice] : llvm::zip_longest(valueShape, slices)) {
+    if (slice.has_value()) {
+      auto dimSlice = dyn_cast<SliceType>(slice->getType());
 
-    auto start = dimSlice.getStart();
-    auto end = dimSlice.getEnd();
-    auto stride = dimSlice.getStride();
+      auto start = dimSlice.getStart();
+      auto end = dimSlice.getEnd();
+      auto stride = dimSlice.getStride();
 
-    // TODO: check for default values for start = 0, end = -1
-    // rework these statements now that start, end, and stride have defaults.
-    if (!start.has_value()) {
-      start = 0;
+      // TODO: check for default values for start = 0, end = -1
+      // rework these statements now that start, end, and stride have defaults.
+      if (*end == -1) {
+        end = size;
+      }
+
+      if (size <= *start && size >= *end) {
+        return failure();
+      }
+
+      if (auto resultSize = (*end - *start) / *stride) {
+        resultShape.push_back(resultSize);
+      }
+    } else {
+      resultShape.push_back(*size);
     }
-
-    if (!end.has_value()) {
-      end = s;
-    }
-
-    if (s <= *start && s > *end) {
-      return failure();
-    }
-
-    auto size = (*end - *start) / *stride;
-    resultShape.push_back(size);
   }
 
   inferredReturnShapes.emplace_back(resultShape, valueType.getElementType());
