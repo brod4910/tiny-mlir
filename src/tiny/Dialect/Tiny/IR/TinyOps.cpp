@@ -10,6 +10,7 @@
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
@@ -294,18 +295,18 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
 ------------------- BUFFER OPS --------------------
 --------------------------------------------------- */
 
-LogicalResult LoadOp::inferReturnTypeComponents(
-    MLIRContext *context, std::optional<Location> location,
-    LoadOpAdaptor adaptor,
+LogicalResult BufferOpShapeInference(
+    RankedTensorType valueType, ValueRange slices,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
-  auto slices = adaptor.getSlice();
 
   auto valueShape = valueType.getShape();
-
   SmallVector<int64_t> resultShape;
 
   for (auto [size, slice] : llvm::zip_longest(valueShape, slices)) {
+    if (!size.has_value() && slice.has_value()) {
+      return failure();
+    }
+
     if (slice.has_value()) {
       auto dimSlice = dyn_cast<SliceType>(slice->getType());
 
@@ -313,27 +314,38 @@ LogicalResult LoadOp::inferReturnTypeComponents(
       auto end = dimSlice.getEnd();
       auto stride = dimSlice.getStride();
 
-      // TODO: check for default values for start = 0, end = -1
-      // rework these statements now that start, end, and stride have defaults.
       if (*end == -1) {
-        end = size;
+        end = *size - 1;
       }
 
-      if (size <= *start && size >= *end) {
+      if (size <= *start && size > *end) {
         return failure();
       }
 
-      if (auto resultSize = (*end - *start) / *stride) {
-        resultShape.push_back(resultSize);
-      }
-    } else {
-      resultShape.push_back(*size);
+      auto quotient = (*end - *start) / *stride;
+      auto remainder = (*end - *start) % *stride;
+
+      auto resultSize = quotient + remainder;
+
+      *size = resultSize;
     }
+
+    resultShape.push_back(*size);
   }
 
   inferredReturnShapes.emplace_back(resultShape, valueType.getElementType());
 
   return success();
+}
+
+LogicalResult LoadOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    LoadOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto slices = adaptor.getSlice();
+
+  return BufferOpShapeInference(valueType, slices, inferredReturnShapes);
 }
 
 /*
