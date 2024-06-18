@@ -342,6 +342,8 @@ def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
   let assemblyFormat = [{
     $src (`[` $src_slice^ `]`)? `,` $dst (`[` $dst_slice^ `]`)? attr-dict `:` functional-type(operands, results)
   }];
+
+  let hasVerifier = 1;
 }
 
 /* 

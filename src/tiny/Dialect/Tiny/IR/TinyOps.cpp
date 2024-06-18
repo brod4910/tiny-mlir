@@ -348,6 +348,33 @@ LogicalResult LoadOp::inferReturnTypeComponents(
   return BufferOpShapeInference(valueType, slices, inferredReturnShapes);
 }
 
+LogicalResult StoreOp::verify() {
+  SmallVector<ShapedTypeComponents> slicedShapes;
+
+  auto srcType = dyn_cast<RankedTensorType>(getSrc().getType());
+  auto srcSlices = getSrcSlice();
+
+  if (BufferOpShapeInference(srcType, srcSlices, slicedShapes).failed()) {
+    return failure();
+  }
+
+  auto dstType = dyn_cast<RankedTensorType>(getDst().getType());
+  auto dstSlices = getDstSlice();
+
+  if (BufferOpShapeInference(dstType, dstSlices, slicedShapes).failed()) {
+    return failure();
+  }
+
+  SmallVector<int64_t> resultShape;
+
+  if (!OpTrait::util::getBroadcastedShape(
+          slicedShapes[0].getDims(), slicedShapes[1].getDims(), resultShape)) {
+    return failure();
+  }
+
+  return success();
+}
+
 /*
 ---------------------------------------------------
 ------------------ TERNARY OPS --------------------
