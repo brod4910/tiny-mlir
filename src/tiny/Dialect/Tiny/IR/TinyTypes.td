@@ -32,7 +32,7 @@ class Tiny_Type<string name, list<Trait> traits = [],
 // Note: Syntatic sugar that will get transformed into
 // an affine map. Mostly just for ease of use in the IR.
 def Tiny_SliceType : Tiny_Type<"Slice"> {  
-    let parameters = (ins DefaultValuedParameter<"std::optional<int64_t>", "0">: $start,
+    let parameters = (ins DefaultValuedParameter<"std::optional<int64_t>", "-1">: $start,
                         DefaultValuedParameter<"std::optional<int64_t>", "-1">: $end,
                         DefaultValuedParameter<"std::optional<int64_t>", "1">: $stride);
     let mnemonic = "slice";
@@ -48,6 +48,24 @@ def Tiny_SliceType : Tiny_Type<"Slice"> {
     //    }
     // }
     let assemblyFormat =  "`<` ( $start^ (`,` $end^ (`,` $stride^)? )? )? `>`";
+
+    let extraClassDeclaration = [{
+      bool startIsDefault() {
+        return *getStart() == -1;
+      }
+
+      bool endIsDefault() {
+        return *getEnd() == -1;
+      }
+
+      bool strideIsDefault() {
+        return *getStride() == 1;
+      }
+
+      static bool isDefaultSlice(mlir::tiny::SliceType slice) {
+        return slice == mlir::tiny::SliceType{};
+      }
+    }];
 }
 
 #endif // TINY_TYPES

@@ -311,15 +311,22 @@ LogicalResult BufferOpShapeInference(
                                        "is greater than tensor shape.";
     }
 
-    if (slice.has_value()) {
-      auto dimSlice = dyn_cast<SliceType>(slice->getType());
+    SliceType dimSlice;
 
+    if (!slice.has_value()) {
+      dimSlice = SliceType{};
+    } else {
+      dimSlice = dyn_cast<SliceType>(slice->getType());
+    }
+
+    if (SliceType::isDefaultSlice(dimSlice)) {
+      resultShape.push_back(*size);
+    } else {
       auto start = dimSlice.getStart();
       auto end = dimSlice.getEnd();
       auto stride = dimSlice.getStride();
 
-      if (*end == -1) {
-        end = *size - 1;
+      if (dimSlice.startIsDefault()) {
       }
 
       if (*size <= *start) {
@@ -337,10 +344,8 @@ LogicalResult BufferOpShapeInference(
 
       auto resultSize = quotient + remainder;
 
-      *size = resultSize;
+      resultShape.push_back(resultSize);
     }
-
-    resultShape.push_back(*size);
   }
 
   inferredReturnShapes.emplace_back(resultShape, valueType.getElementType());
@@ -386,7 +391,8 @@ LogicalResult StoreOp::verify() {
 
   if (!OpTrait::util::getBroadcastedShape(
           slicedShapes[0].getDims(), slicedShapes[1].getDims(), resultShape)) {
-    return emitOpError("src and dst shape aren't broadcastable.");
+    return emitOpError("src and dst shape aren't broadcastable with shapes: ")
+           << slicedShapes[0].getDims() << " and " << slicedShapes[1].getDims();
   }
 
   return success();

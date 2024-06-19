@@ -22,6 +22,14 @@ tiny.func @multi_slice_load(%arg0: tensor<10x10x10xi8>) -> tensor<5x2x1xi8> {
 
 tiny.func @simple_store(%arg0: tensor<10x1xi8>, %arg1: tensor<10x1xi8>) -> tensor<10x1xi8> {
     %slice0 = tiny.slice[0] : !tiny.slice<0>
+    
+    tiny.store %arg0[%slice5], %arg1[%slice0] : (tensor<10x1xi8>, !tiny.slice<5>, tensor<10x1xi8>, !tiny.slice<0>) -> ()
+
+    tiny.return %arg1 : tensor<10x1xi8>
+}
+
+tiny.func @multi_slice_store(%arg0: tensor<10x1xi8>, %arg1: tensor<10x1xi8>) -> tensor<10x1xi8> {
+    %slice0 = tiny.slice[0] : !tiny.slice<0>
 
     %slice5 = tiny.slice[5] : !tiny.slice<5>
 

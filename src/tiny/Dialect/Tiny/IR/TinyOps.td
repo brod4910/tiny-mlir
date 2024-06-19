@@ -39,7 +39,7 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- */
 
 def Tiny_SliceOp : Tiny_Op<"slice", [InferTypeOpAdaptor]> {
-    let arguments = (ins DefaultValuedOptionalAttr<IndexAttr, "0">:$start,
+    let arguments = (ins DefaultValuedOptionalAttr<IndexAttr, "-1">:$start,
                          DefaultValuedOptionalAttr<IndexAttr, "-1">:$end,
                          DefaultValuedOptionalAttr<IndexAttr, "1">:$stride);
     let results = (outs Tiny_SliceType:$result);
@@ -54,7 +54,7 @@ def Tiny_SliceOp : Tiny_Op<"slice", [InferTypeOpAdaptor]> {
     //      }
     //    }
     // }
-    let assemblyFormat = [{ 
+    let assemblyFormat = [{
       `[` ( $start^ (`,` $end^ (`,` $stride^)? )? )? `]` attr-dict `:`  type($result)
     }];
 }
