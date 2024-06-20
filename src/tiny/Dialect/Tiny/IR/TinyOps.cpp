@@ -1,11 +1,18 @@
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Traits.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/ExtensibleDialect.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
@@ -16,12 +23,36 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
-#include <_types/_uint64_t.h>
-#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
 namespace mlir::tiny {
+
+/*
+---------------------------------------------------
+------------------ UTILITY OPS --------------------
+--------------------------------------------------- */
+
+IntegerAttr getConstantOpValue(Value value) {
+  auto attr = value.getDefiningOp<arith::ConstantOp>().getValue();
+
+  return dyn_cast<IntegerAttr>(attr);
+}
+
+LogicalResult SliceOp::inferReturnTypes(
+    ::mlir::MLIRContext *context, std::optional<::mlir::Location> location,
+    SliceOpAdaptor adaptor,
+    ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+  auto start = adaptor.getStart();
+  auto end = adaptor.getEnd();
+  auto stride = adaptor.getStride();
+
+  inferredReturnTypes.push_back(SliceType::get(context, start.getSExtValue(),
+                                               end.getSExtValue(),
+                                               stride.getSExtValue()));
+  return success();
+}
+
 /*
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------
@@ -118,6 +149,7 @@ LogicalResult ReduceOpShapeInference(
 
   auto valueShape = value.getShape();
 
+  // Get real axis. Rank + (-axis) = real axis
   axis = axis >= 0 ? axis : rank + axis;
 
   SmallVector<int64_t> resultShape;
@@ -253,6 +285,110 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+/*
+---------------------------------------------------
+-------------------- LOAD OPS ---------------------
+--------------------------------------------------- */
+
+/*
+---------------------------------------------------
+------------------- BUFFER OPS --------------------
+--------------------------------------------------- */
+
+LogicalResult BufferOpShapeInference(
+    RankedTensorType valueType, ValueRange slices,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes, Location loc,
+    StringLiteral opName) {
+
+  auto valueShape = valueType.getShape();
+  SmallVector<int64_t> resultShape;
+
+  for (auto [size, slice] : llvm::zip_longest(valueShape, slices)) {
+    if (!size.has_value() && slice.has_value()) {
+      return emitError(loc, opName) << ": shape inference failed. Slice length "
+                                       "is greater than tensor shape.";
+    }
+
+    SliceType dimSlice;
+
+    if (!slice.has_value()) {
+      dimSlice = SliceType::get(valueType.getContext(), 0, *size, 1);
+    } else {
+      dimSlice = dyn_cast<SliceType>(slice->getType());
+    }
+
+    auto start = dimSlice.getStart();
+    auto end = dimSlice.getEnd();
+    auto stride = dimSlice.getStride();
+
+    if (*size <= start) {
+      return emitError(loc, opName)
+             << ": shape inference failed. Start is " << start
+             << " which is greater than or equal to size which is " << *size;
+    } else if (end > size) {
+      return emitError(loc, opName)
+             << ": shape inference failed. Size is " << *size
+             << " which is greater than end which is " << end;
+    }
+
+    auto quotient = (end - start) / *stride;
+    auto remainder = (end - start) % *stride;
+
+    auto resultSize = quotient + remainder;
+
+    resultShape.push_back(resultSize);
+  }
+
+  inferredReturnShapes.emplace_back(resultShape, valueType.getElementType());
+
+  return success();
+}
+
+LogicalResult LoadOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    LoadOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
+  auto slices = adaptor.getSlice();
+
+  return BufferOpShapeInference(valueType, slices, inferredReturnShapes,
+                                *location, getOperationName());
+}
+
+LogicalResult StoreOp::verify() {
+  SmallVector<ShapedTypeComponents> slicedShapes;
+
+  auto srcType = dyn_cast<RankedTensorType>(getSrc().getType());
+  auto srcSlices = getSrcSlice();
+
+  auto srcFailed = BufferOpShapeInference(srcType, srcSlices, slicedShapes,
+                                          getLoc(), getOperationName());
+
+  if (srcFailed.failed()) {
+    return srcFailed;
+  }
+
+  auto dstType = dyn_cast<RankedTensorType>(getDst().getType());
+  auto dstSlices = getDstSlice();
+
+  auto dstFailed = BufferOpShapeInference(dstType, dstSlices, slicedShapes,
+                                          getLoc(), getOperationName());
+
+  if (dstFailed.failed()) {
+    return dstFailed;
+  }
+
+  SmallVector<int64_t> resultShape;
+
+  if (!OpTrait::util::getBroadcastedShape(
+          slicedShapes[0].getDims(), slicedShapes[1].getDims(), resultShape)) {
+    return emitOpError("src and dst shape aren't broadcastable with shapes: ")
+           << slicedShapes[0].getDims() << " and " << slicedShapes[1].getDims();
+  }
+
+  return success();
 }
 
 /*

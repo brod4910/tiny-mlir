@@ -2,8 +2,9 @@
 #define TINY_OPS
 
 
-include "TinyDialect.td"
-include "TinyTypes.td"
+include "tiny/Dialect/Tiny/IR/TinyDialect.td"
+include "tiny/Dialect/Tiny/IR/TinyTypes.td"
+include "tiny/Dialect/Tiny/IR/TinyAttrs.td"
 
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
@@ -19,6 +20,7 @@ include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/SymbolInterfaces.td"
 
 
+
 class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnemonic, traits>;
 
 /* 
@@ -30,6 +32,22 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- 
 -------------------- Traits -----------------------
 --------------------------------------------------- */
+
+/* 
+--------------------------------------------------- 
+------------------ UTILITY OPS --------------------
+--------------------------------------------------- */
+
+def Tiny_SliceOp : Tiny_Op<"slice", [InferTypeOpAdaptor]> {
+    let arguments = (ins IndexAttr:$start,
+                         IndexAttr:$end,
+                         DefaultValuedOptionalAttr<IndexAttr, "1">:$stride);
+    let results = (outs Tiny_SliceType:$result);
+
+    let assemblyFormat = [{
+      `[` $start `,` $end (`,` $stride^)? `]` attr-dict `:`  type($result)
+    }];
+}
 
 /* 
 --------------------------------------------------- 
@@ -265,10 +283,58 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
     An operation that takes the max of the two input tensors element-wise
   }];
 }
+
 /* 
 --------------------------------------------------- 
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
+
+/* 
+--------------------------------------------------- 
+------------------- BUFFER OPS --------------------
+--------------------------------------------------- */
+
+class Tiny_BufferOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
+
+def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
+                                         /* MemRefsNormalizable,*/
+                                         PredOpTrait<"tensor and result have same element type",
+                                            TCresVTEtIsSameAsOp<0, 0>>]> {
+  let arguments = (ins Arg<Tiny_Tensor, "source to load from",
+                           [MemRead]>: $value,
+                       Variadic<Tiny_SliceType>:$slice);
+  let results = (outs Tiny_Tensor: $result);
+
+  let summary = "Load value into memory";
+
+  let description = [{
+    Loads a value into a mutable address space.
+  }];
+
+  let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
+  let arguments = (ins  Tiny_Tensor:$src,
+                        Variadic<Tiny_SliceType>:$src_slice,
+                        Arg<Tiny_Tensor, "target reference to store to", 
+                            [MemWrite]>: $dst,
+                        Variadic<Tiny_SliceType>:$dst_slice);
+  let results = (outs);
+
+  let summary = "Store src into memory";
+
+  let description = [{
+    Stores a value into a mutable address space.
+  }];
+
+  // TODO: investigate why Op trait for infering type of $src not working.
+  let assemblyFormat = [{
+    $src (`[` $src_slice^ `]`)? `,` $dst (`[` $dst_slice^ `]`)? attr-dict `:` functional-type(operands, results)
+  }];
+
+  let hasVerifier = 1;
+}
 
 /* 
 --------------------------------------------------- 

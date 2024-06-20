@@ -9,8 +9,11 @@
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h.inc"
 
-#define GET_OP_CLASSES
-#include "tiny/Dialect/Tiny/IR/TinyOps.h.inc"
-
 #define GET_TYPEDEF_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyTypes.h.inc"
+
+#define GET_ATTRDEF_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyAttrs.h.inc"
+
+#define GET_OP_CLASSES
+#include "tiny/Dialect/Tiny/IR/TinyOps.h.inc"
