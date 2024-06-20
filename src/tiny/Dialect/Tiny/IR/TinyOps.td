@@ -39,23 +39,13 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- */
 
 def Tiny_SliceOp : Tiny_Op<"slice", [InferTypeOpAdaptor]> {
-    let arguments = (ins DefaultValuedOptionalAttr<IndexAttr, "-1">:$start,
-                         DefaultValuedOptionalAttr<IndexAttr, "-1">:$end,
+    let arguments = (ins IndexAttr:$start,
+                         IndexAttr:$end,
                          DefaultValuedOptionalAttr<IndexAttr, "1">:$stride);
     let results = (outs Tiny_SliceType:$result);
 
-    // Note: In essence:
-    // if (start) {
-    //    print or parse
-    //    if (end) {
-    //      print or parse
-    //      if (stride) {
-    //        print or parse
-    //      }
-    //    }
-    // }
     let assemblyFormat = [{
-      `[` ( $start^ (`,` $end^ (`,` $stride^)? )? )? `]` attr-dict `:`  type($result)
+      `[` $start `,` $end (`,` $stride^)? `]` attr-dict `:`  type($result)
     }];
 }
 

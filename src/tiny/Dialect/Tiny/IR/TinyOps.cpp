@@ -314,38 +314,31 @@ LogicalResult BufferOpShapeInference(
     SliceType dimSlice;
 
     if (!slice.has_value()) {
-      dimSlice = SliceType{};
+      dimSlice = SliceType::get(valueType.getContext(), 0, *size, 1);
     } else {
       dimSlice = dyn_cast<SliceType>(slice->getType());
     }
 
-    if (SliceType::isDefaultSlice(dimSlice)) {
-      resultShape.push_back(*size);
-    } else {
-      auto start = dimSlice.getStart();
-      auto end = dimSlice.getEnd();
-      auto stride = dimSlice.getStride();
+    auto start = dimSlice.getStart();
+    auto end = dimSlice.getEnd();
+    auto stride = dimSlice.getStride();
 
-      if (dimSlice.startIsDefault()) {
-      }
-
-      if (*size <= *start) {
-        return emitError(loc, opName)
-               << ": shape inference failed. Start is " << *start
-               << " which is greater than or equal to size which is " << *size;
-      } else if (*end > *size) {
-        return emitError(loc, opName)
-               << ": shape inference failed. Size is " << *size
-               << " which is greater than end which is " << *end;
-      }
-
-      auto quotient = (*end - *start) / *stride;
-      auto remainder = (*end - *start) % *stride;
-
-      auto resultSize = quotient + remainder;
-
-      resultShape.push_back(resultSize);
+    if (*size <= start) {
+      return emitError(loc, opName)
+             << ": shape inference failed. Start is " << start
+             << " which is greater than or equal to size which is " << *size;
+    } else if (end > size) {
+      return emitError(loc, opName)
+             << ": shape inference failed. Size is " << *size
+             << " which is greater than end which is " << end;
     }
+
+    auto quotient = (end - start) / *stride;
+    auto remainder = (end - start) % *stride;
+
+    auto resultSize = quotient + remainder;
+
+    resultShape.push_back(resultSize);
   }
 
   inferredReturnShapes.emplace_back(resultShape, valueType.getElementType());
