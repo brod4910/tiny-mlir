@@ -40,9 +40,8 @@ IntegerAttr getConstantOpValue(Value value) {
 }
 
 LogicalResult SliceOp::inferReturnTypes(
-    ::mlir::MLIRContext *context, std::optional<::mlir::Location> location,
-    SliceOpAdaptor adaptor,
-    ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+    MLIRContext *context, std::optional<Location> location,
+    SliceOpAdaptor adaptor, SmallVectorImpl<Type> &inferredReturnTypes) {
   auto start = adaptor.getStart();
   auto end = adaptor.getEnd();
   auto stride = adaptor.getStride();
@@ -292,10 +291,17 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
 
-/*
----------------------------------------------------
-------------------- BUFFER OPS --------------------
---------------------------------------------------- */
+LogicalResult EmptyOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    EmptyOpAdaptor adaptor,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  inferredReturnShapes.emplace_back(adaptor.getShape(),
+                                    adaptor.getShape().getType());
+  return success();
+} /*
+                  ---------------------------------------------------
+                  ------------------- BUFFER OPS --------------------
+                  --------------------------------------------------- */
 
 LogicalResult BufferOpShapeInference(
     RankedTensorType valueType, ValueRange slices,

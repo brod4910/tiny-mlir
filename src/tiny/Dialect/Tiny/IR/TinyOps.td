@@ -49,6 +49,15 @@ def Tiny_SliceOp : Tiny_Op<"slice", [InferTypeOpAdaptor]> {
     }];
 }
 
+def Tiny_ShapeOp : Tiny_Op<"shape", [NoMemoryEffect]> {
+    let arguments = (ins I64ArrayAttr: $shape);
+    let results = (outs Tiny_ShapeType:$result);
+
+    let assemblyFormat = [{
+      $shape attr-dict `:` type($result)
+    }];
+}
+
 /* 
 --------------------------------------------------- 
 -------------------- CONST OP ---------------------
@@ -288,6 +297,22 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 --------------------------------------------------- 
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
+
+class Tiny_LoadOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
+
+def Tiny_EmptyOp : Tiny_LoadOp<"empty", [Pure, InferTensorTypeAdaptor]> {
+  let arguments = (ins Tiny_ShapeType: $shape);
+  let results = (outs Tiny_Tensor: $result);
+
+  let summary = "Initializes an empty tensor.";
+
+  let description = [{
+    Initializes an empty tensor of the specific shape and type.
+  }];
+
+
+  let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
+}
 
 /* 
 --------------------------------------------------- 
