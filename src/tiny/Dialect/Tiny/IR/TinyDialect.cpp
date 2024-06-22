@@ -3,9 +3,12 @@
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinTypeInterfaces.h"
 #include "mlir/IR/BuiltinTypes.h"
 
 #include "mlir/IR/Types.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/MathExtras.h"
 
@@ -41,5 +44,36 @@ void TinyDialect::initialize() {
 Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
                                             Type type, Location loc) {
   return ConstantOp::materialize(builder, value, type, loc);
+}
+
+/*
+---------------------------------------------------
+------------------- TINY TYPES --------------------
+--------------------------------------------------- */
+
+/* ------------------ Shape Type ------------------ */
+
+ShapeType ShapeType::cloneWith(std::optional<ArrayRef<int64_t>> shape,
+                               Type elementType) const {
+  return ShapeType::get(elementType.getContext(), *shape, elementType);
+}
+
+Type ShapeType::parse(::mlir::AsmParser &parser) {
+  llvm::SmallVector<int64_t> dimensions;
+  Type type;
+
+  if (parser.parseLess().failed() ||
+      parser.parseDimensionList(dimensions).failed() ||
+      parser.parseType(type).failed()) {
+    return {};
+  }
+
+  return ShapeType::get(parser.getContext(), ArrayRef(dimensions), type);
+}
+
+void ShapeType::print(AsmPrinter &printer) const {
+  printer << "<";
+  printer.printDimensionList(getShape());
+  printer << "x" << getElementType() << ">";
 }
 } // namespace mlir::tiny
