@@ -72,14 +72,14 @@ tiny.func @simple_xor(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tenso
 
 // CHECK-LABEL: @simple_maximum
 tiny.func @simple_shl(%arg0: tensor<10x10xi8>) -> tensor<10x10xi8> {
-    %0 = tiny.shl %arg0, 10 : (tensor<10x10xi8>, index) -> tensor<10x10xi8>
+    %0 = tiny.shl %arg0, 10 : (tensor<10x10xi8>) -> tensor<10x10xi8>
 
     tiny.return %0 : tensor<10x10xi8>
 }
 
 // CHECK-LABEL: @simple_maximum
 tiny.func @simple_shr(%arg0: tensor<10x10xi8>) -> tensor<10x10xi8> {
-    %0 = tiny.shr %arg0, 10 : (tensor<10x10xi8>, index) -> tensor<10x10xi8>
+    %0 = tiny.shr %arg0, 10 : (tensor<10x10xi8>) -> tensor<10x10xi8>
 
     tiny.return %0 : tensor<10x10xi8>
 }

@@ -157,7 +157,6 @@ def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperand
     }];
 }
 
-
 /* 
 --------------------------------------------------- 
 ------------------- REDUCE OPS --------------------
@@ -332,27 +331,29 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
 def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         Pure, 
-                                        ResultsBroadcastableShape, 
                                       ]> {
   let arguments = (ins Tiny_Tensor: $lhs, IndexAttr: $rhs);
-  let summary = "Take the shift-right of the two tensors";
+  let summary = "Shift LHS right by RHS.";
   
   let description = [{
-    An operation that takes the shift-right of the two input tensors element-wise
+    An operation that takes the shift-right of LHS by RHS.
   }];
+
+  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` functional-type(operands, results)";
 }
 
 def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         Pure, 
-                                        ResultsBroadcastableShape, 
                                       ]> {
   let arguments = (ins Tiny_Tensor: $lhs, IndexAttr: $rhs);
-  let summary = "Take the shift-left of the two tensors";
+  let summary = "Shift LHS left by RHS.";
   
   let description = [{
-    An operation that takes the shift-right of the two input tensors element-wise
+    An operation that takes the shift-right of of LHS by RHS.
   }];
+
+  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` functional-type(operands, results)";
 }
 
 /* 
