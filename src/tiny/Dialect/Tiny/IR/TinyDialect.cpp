@@ -46,6 +46,13 @@ Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
   return ConstantOp::materialize(builder, value, type, loc);
 }
 
+/*
+---------------------------------------------------
+------------------- TINY TYPES --------------------
+--------------------------------------------------- */
+
+/* ------------------ Shape Type ------------------ */
+
 ShapeType ShapeType::cloneWith(std::optional<ArrayRef<int64_t>> shape,
                                Type elementType) const {
   return ShapeType::get(elementType.getContext(), *shape, elementType);

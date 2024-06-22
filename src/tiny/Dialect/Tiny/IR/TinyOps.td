@@ -40,21 +40,21 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 
 def Tiny_SliceOp : Tiny_Op<"slice", [InferTypeOpAdaptor]> {
     let arguments = (ins IndexAttr:$start,
-                         IndexAttr:$end,
+                         DefaultValuedOptionalAttr<IndexAttr, "-1">:$end,
                          DefaultValuedOptionalAttr<IndexAttr, "1">:$stride);
     let results = (outs Tiny_SliceType:$result);
 
     let assemblyFormat = [{
-      `[` $start `,` $end (`,` $stride^)? `]` attr-dict `:`  type($result)
+      `[` $start (`,` $end^ (`,` $stride^)? )? `]` attr-dict `:`  type($result)
     }];
 }
 
 def Tiny_ShapeOp : Tiny_Op<"shape", [NoMemoryEffect]> {
-    let arguments = (ins I64ArrayAttr: $shape);
+    let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
     let results = (outs Tiny_ShapeType:$result);
 
     let assemblyFormat = [{
-      $shape attr-dict `:` type($result)
+      $shape `,` $elementType attr-dict `:` type($result)
     }];
 }
 
@@ -310,6 +310,59 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [Pure, InferTensorTypeAdaptor]> {
     Initializes an empty tensor of the specific shape and type.
   }];
 
+
+  let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_CopyOp : Tiny_LoadOp<"copy", [Pure, SameOperandsAndResultShape]> {
+  let arguments = (ins Tiny_Tensor: $value);
+  let results = (outs Tiny_Tensor: $result);
+
+  let summary = "Copies a tensor.";
+
+  let description = [{
+    Initializes a new tensor by copying another.
+  }];
+
+  let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [Pure, SameOperandsAndResultShape]> {
+  let arguments = (ins Tiny_Tensor: $value);
+  let results = (outs Tiny_Tensor: $result);
+
+  let summary = "Makes a tensor contiguous.";
+
+  let description = [{
+    Initializes a new tensor by making it contiguous. This will most likely
+    this function will be most useful from a tiny.load or a tiny.view. Otherwise, use copy.
+  }];
+
+  let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
+  let arguments = (ins Tiny_Tensor: $value, Variadic<Tiny_SliceType>:$slice);
+  let results = (outs Tiny_Tensor: $result);
+
+  let summary = "Creates a view of a tensor.";
+
+  let description = [{
+    Initializes a new tensor which is a view of the operand.
+  }];
+
+  let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_RandNOp : Tiny_LoadOp<"randn", [Pure, SameOperandsAndResultShape]> {
+  let arguments = (ins Tiny_ShapeType: $shape);
+  let results = (outs Tiny_FloatTensor: $result);
+
+  let summary = "Makes a random tensor.";
+
+  let description = [{
+    Initializes a new tensor with random values between 0-1.
+  }];
 
   let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
 }
