@@ -300,7 +300,8 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 
 class Tiny_LoadOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
 
-def Tiny_EmptyOp : Tiny_LoadOp<"empty", [Pure, InferTensorTypeAdaptor]> {
+// TODO: Pure?
+def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
   let arguments = (ins Tiny_ShapeType: $shape);
   let results = (outs Tiny_Tensor: $result);
 
@@ -314,7 +315,8 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [Pure, InferTensorTypeAdaptor]> {
   let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_CopyOp : Tiny_LoadOp<"copy", [Pure, SameOperandsAndResultShape]> {
+// TODO: Pure?
+def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape]> {
   let arguments = (ins Tiny_Tensor: $value);
   let results = (outs Tiny_Tensor: $result);
 
@@ -327,7 +329,8 @@ def Tiny_CopyOp : Tiny_LoadOp<"copy", [Pure, SameOperandsAndResultShape]> {
   let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [Pure, SameOperandsAndResultShape]> {
+// TODO: Pure?
+def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> {
   let arguments = (ins Tiny_Tensor: $value);
   let results = (outs Tiny_Tensor: $result);
 
@@ -354,7 +357,8 @@ def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
   let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_RandNOp : Tiny_LoadOp<"randn", [Pure, SameOperandsAndResultShape]> {
+// TODO: Pure?
+def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
   let arguments = (ins Tiny_ShapeType: $shape);
   let results = (outs Tiny_FloatTensor: $result);
 
