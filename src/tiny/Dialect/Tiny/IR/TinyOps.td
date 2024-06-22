@@ -149,6 +149,15 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
     }];
 }
 
+def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+    let summary = "reciprocal of the value.";
+
+    let description = [{
+        An operation that computes the reciprocal of the value.
+    }];
+}
+
+
 /* 
 --------------------------------------------------- 
 ------------------- REDUCE OPS --------------------
@@ -253,7 +262,7 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
   }];
 }
 
-def Tiny_CmpEqOp : Tiny_BinaryOp<"cmpeq", [
+def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                            Pure, 
                                            ResultsBroadcastableShape, 
@@ -290,6 +299,59 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
   
   let description = [{
     An operation that takes the max of the two input tensors element-wise
+  }];
+}
+
+def Tiny_ModOp : Tiny_BinaryOp<"mod", [
+                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                        Pure, 
+                                        ResultsBroadcastableShape, 
+                                        SameOperandsAndResultElementType
+                                      ]> {
+  let summary = "Take the mod of the two tensors";
+  
+  let description = [{
+    An operation that takes the mod of the two input tensors element-wise
+  }];
+}
+
+def Tiny_XOROp : Tiny_BinaryOp<"xor", [
+                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                        Pure, 
+                                        Commutative,
+                                        ResultsBroadcastableShape, 
+                                        SameOperandsAndResultElementType
+                                      ]> {
+  let summary = "Take the xor of the two tensors";
+  
+  let description = [{
+    An operation that takes the xor of the two input tensors element-wise
+  }];
+}
+
+def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
+                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                        Pure, 
+                                        ResultsBroadcastableShape, 
+                                      ]> {
+  let arguments = (ins Tiny_Tensor: $lhs, IndexAttr: $rhs);
+  let summary = "Take the shift-right of the two tensors";
+  
+  let description = [{
+    An operation that takes the shift-right of the two input tensors element-wise
+  }];
+}
+
+def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
+                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                        Pure, 
+                                        ResultsBroadcastableShape, 
+                                      ]> {
+  let arguments = (ins Tiny_Tensor: $lhs, IndexAttr: $rhs);
+  let summary = "Take the shift-left of the two tensors";
+  
+  let description = [{
+    An operation that takes the shift-right of the two input tensors element-wise
   }];
 }
 
