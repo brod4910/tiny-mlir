@@ -354,6 +354,7 @@ LogicalResult ShlOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  // TODO: Check if this fails for any cases since operand 1 is IndexAttr
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
@@ -362,6 +363,7 @@ LogicalResult ShrOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  // TODO: Check if this fails for any cases since operand 1 is IndexAttr
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
