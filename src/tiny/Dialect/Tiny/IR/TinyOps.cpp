@@ -303,9 +303,9 @@ LogicalResult DivOp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
-/* ----------------- CMPEQ Op --------------------- */
+/* ----------------- CMPNe Op --------------------- */
 
-LogicalResult CmpEqOp::inferReturnTypeComponents(
+LogicalResult CmpNeOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
@@ -330,6 +330,40 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+LogicalResult ModOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+LogicalResult XOROp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+LogicalResult ShlOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  // TODO: Check if this fails for any cases since operand 1 is IndexAttr
+  return BinaryOpShapeInference(operands, inferredReturnShapes);
+}
+
+LogicalResult ShrOp::inferReturnTypeComponents(
+    MLIRContext *context, std::optional<Location> location,
+    ValueShapeRange operands, DictionaryAttr attributes,
+    OpaqueProperties properties, RegionRange regions,
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+  // TODO: Check if this fails for any cases since operand 1 is IndexAttr
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 

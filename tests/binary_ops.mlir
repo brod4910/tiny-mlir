@@ -35,9 +35,9 @@ tiny.func @simple_div(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tenso
     tiny.return %0 : tensor<10x10xi8>
 }
 
-// CHECK-LABEL: @simple_cmpeq
-tiny.func @simple_cmpeq(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
-    %0 = tiny.cmpeq %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
+// CHECK-LABEL: @simple_cmpne
+tiny.func @simple_cmpne(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
+    %0 = tiny.cmpne %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
 
     tiny.return %0 : tensor<10x10xi8>
 }
@@ -52,6 +52,34 @@ tiny.func @simple_cmplt(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> ten
 // CHECK-LABEL: @simple_maximum
 tiny.func @simple_maximum(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
     %0 = tiny.maximum %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
+
+    tiny.return %0 : tensor<10x10xi8>
+}
+
+// CHECK-LABEL: @simple_maximum
+tiny.func @simple_mod(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
+    %0 = tiny.mod %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
+
+    tiny.return %0 : tensor<10x10xi8>
+}
+
+// CHECK-LABEL: @simple_maximum
+tiny.func @simple_xor(%arg0: tensor<10x10xi8>, %arg1: tensor<10x10xi8>) -> tensor<10x10xi8> {
+    %0 = tiny.xor %arg0, %arg1 : (tensor<10x10xi8>, tensor<10x10xi8>) -> tensor<10x10xi8>
+
+    tiny.return %0 : tensor<10x10xi8>
+}
+
+// CHECK-LABEL: @simple_maximum
+tiny.func @simple_shl(%arg0: tensor<10x10xi8>) -> tensor<10x10xi8> {
+    %0 = tiny.shl %arg0, 10 : (tensor<10x10xi8>) -> tensor<10x10xi8>
+
+    tiny.return %0 : tensor<10x10xi8>
+}
+
+// CHECK-LABEL: @simple_maximum
+tiny.func @simple_shr(%arg0: tensor<10x10xi8>) -> tensor<10x10xi8> {
+    %0 = tiny.shr %arg0, 10 : (tensor<10x10xi8>) -> tensor<10x10xi8>
 
     tiny.return %0 : tensor<10x10xi8>
 }
