@@ -1,4 +1,6 @@
 #include "tiny/Conversion/TinyToAccl/TinyToAcclPass.h"
+#include "mlir/Support/LogicalResult.h"
+#include "mlir/Transforms/DialectConversion.h"
 #include "tiny/Dialect/Accelerator/Transform/AcclConversion.h"
 
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -46,6 +48,28 @@ struct PassThroughUnaryPattern : public OpConversionPattern<Op> {
   }
 };
 
+template <class Op>
+struct PassThroughBinaryPattern : public OpConversionPattern<Op> {
+  using OpConversionPattern<Op>::OpConversionPattern;
+
+  // TODO: I believe I need to convert the operands as well.
+  LogicalResult
+  matchAndRewrite(Op op, typename Op::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto resultType = op->getResult(0).getType();
+
+    // Ranked tensors types are strictly only allowed.
+    if (resultType && !llvm::isa<RankedTensorType>(resultType)) {
+      return failure();
+    }
+
+    auto newResultType = this->getTypeConverter()->convertType(resultType);
+    rewriter.replaceOpWithNewOp<Op>(op, newResultType, adaptor.getOperands(),
+                                    op->getAttrs());
+    return success();
+  }
+};
+
 struct ConstantPattern : public OpConversionPattern<tiny::ConstantOp> {
   using OpConversionPattern::OpConversionPattern;
 
@@ -70,13 +94,25 @@ struct ConstantPattern : public OpConversionPattern<tiny::ConstantOp> {
 void populateTinyPatternsAndLegality(AcclTypeConverter &typeConverter,
                                      RewritePatternSet &patterns) {
   MLIRContext *context = typeConverter.getContext();
-  patterns.add<ConstantPattern, PassThroughUnaryPattern<tiny::Exp2Op>,
+  patterns.add<ConstantPattern,
+               /* -------- Unary Patterns -------- */
+               PassThroughUnaryPattern<tiny::Exp2Op>,
                PassThroughUnaryPattern<tiny::NoOp>,
                PassThroughUnaryPattern<tiny::SinOp>,
                PassThroughUnaryPattern<tiny::Log2Op>,
                PassThroughUnaryPattern<tiny::CastOp>,
                PassThroughUnaryPattern<tiny::SqrtOp>,
-               PassThroughUnaryPattern<tiny::NegOp>>(typeConverter, context);
+               PassThroughUnaryPattern<tiny::NegOp>,
+               PassThroughUnaryPattern<tiny::RecipOp>,
+               /* -------- Binary Patterns -------- */
+               PassThroughBinaryPattern<tiny::AddOp>,
+               PassThroughBinaryPattern<tiny::SubOp>,
+               PassThroughBinaryPattern<tiny::MulOp>,
+               PassThroughBinaryPattern<tiny::DivOp>,
+               PassThroughBinaryPattern<tiny::CmpNeOp>,
+               PassThroughBinaryPattern<tiny::CmpLtOp>,
+               PassThroughBinaryPattern<tiny::MaximumOp>,
+               PassThroughBinaryPattern<tiny::ModOp>>(typeConverter, context);
 }
 
 class ConvertTinyToAccl

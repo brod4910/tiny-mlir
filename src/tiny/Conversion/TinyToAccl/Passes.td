@@ -10,7 +10,6 @@ def ConvertTinyToAccl : Pass<"convert-tiny-to-accl", "mlir::ModuleOp"> {
     let constructor = "mlir::tiny::createConvertTinyToAcclPass()";
 
     let dependentDialects = ["mlir::tiny::TinyDialect",
-                             "mlir::scf::SCFDialect",
                              "mlir::tiny::accl::AcclDialect"];
 
     let options = [

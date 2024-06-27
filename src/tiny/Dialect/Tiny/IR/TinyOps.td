@@ -10,6 +10,7 @@ include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/FunctionInterfaces.td"
+include "mlir/Interfaces/MemorySlotInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
@@ -84,11 +85,15 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["v
 ------------------- UNARY OPS ---------------------
 --------------------------------------------------- */
 
+// TODO: Add folders using CommonFolders
+
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
     let arguments = (ins Tiny_Tensor:$value);
     let results = (outs Tiny_Tensor:$result);
 
     let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
+
+    let hasFolder = 1;
 }
 
 def Tiny_NoOp : Tiny_UnaryOp<"noop"> {
@@ -199,6 +204,8 @@ def Tiny_SumOp : Tiny_ReduceOp<"sum", [
 
 // TODO: Explore elementwise mappable trait for broadcasted
 // tensors
+//
+// TODO: Add folders using CommonFolders
 
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
   let arguments = (ins Tiny_Tensor: $lhs, Tiny_Tensor: $rhs);
@@ -444,7 +451,9 @@ class Tiny_BufferOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
                                          /* MemRefsNormalizable,*/
                                          PredOpTrait<"tensor and result have same element type",
-                                            TCresVTEtIsSameAsOp<0, 0>>]> {
+                                            TCresVTEtIsSameAsOp<0, 0>>,
+                                         DeclareOpInterfaceMethods<PromotableMemOpInterface>,
+                                         DeclareOpInterfaceMethods<DestructurableAccessorOpInterface>]> {
   let arguments = (ins Arg<Tiny_Tensor, "source to load from",
                            [MemRead]>: $value,
                        Variadic<Tiny_SliceType>:$slice);
@@ -457,9 +466,12 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
   }];
 
   let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
+  let hasFolder = 1;
 }
 
-def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
+def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments,
+                                           DeclareOpInterfaceMethods<PromotableMemOpInterface>,
+                                           DeclareOpInterfaceMethods<DestructurableAccessorOpInterface>]> {
   let arguments = (ins  Tiny_Tensor:$src,
                         Variadic<Tiny_SliceType>:$src_slice,
                         Arg<Tiny_Tensor, "target reference to store to", 
@@ -479,6 +491,7 @@ def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
   }];
 
   let hasVerifier = 1;
+  let hasFolder = 1;
 }
 
 /* 

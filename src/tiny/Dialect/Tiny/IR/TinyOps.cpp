@@ -7,6 +7,7 @@
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
@@ -23,6 +24,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/ErrorHandling.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
@@ -176,6 +178,10 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   // The shape is required to match if both types are ranked.
   return succeeded(verifyCompatibleShape(input, output));
 }
+
+/* ------------------ NoOp Op ------------------- */
+
+OpFoldResult NoOp::fold(FoldAdaptor adaptor) { return getValue(); }
 
 /*
 ---------------------------------------------------
@@ -333,6 +339,8 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
+/* --------------------- Mod Op ---------------------- */
+
 LogicalResult ModOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
@@ -340,6 +348,8 @@ LogicalResult ModOp::inferReturnTypeComponents(
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
+
+/* --------------------- XOR Op ---------------------- */
 
 LogicalResult XOROp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -349,6 +359,8 @@ LogicalResult XOROp::inferReturnTypeComponents(
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
 
+/* --------------------- Shl Op ---------------------- */
+
 LogicalResult ShlOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
@@ -357,6 +369,8 @@ LogicalResult ShlOp::inferReturnTypeComponents(
   // TODO: Check if this fails for any cases since operand 1 is IndexAttr
   return BinaryOpShapeInference(operands, inferredReturnShapes);
 }
+
+/* --------------------- Shr Op ---------------------- */
 
 LogicalResult ShrOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -372,6 +386,8 @@ LogicalResult ShrOp::inferReturnTypeComponents(
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
 
+/* ------------------ Empty Op -------------------- */
+
 LogicalResult EmptyOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     EmptyOpAdaptor adaptor,
@@ -380,6 +396,8 @@ LogicalResult EmptyOp::inferReturnTypeComponents(
   inferredReturnShapes.emplace_back(shape.getShape(), shape.getElementType());
   return success();
 }
+
+/* ------------------- View Op -------------------- */
 
 LogicalResult ViewOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -397,6 +415,8 @@ LogicalResult ViewOp::inferReturnTypeComponents(
 ------------------- BUFFER OPS --------------------
 --------------------------------------------------- */
 
+/* ------------------- Load Op -------------------- */
+
 LogicalResult LoadOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     LoadOpAdaptor adaptor,
@@ -407,6 +427,43 @@ LogicalResult LoadOp::inferReturnTypeComponents(
   return SliceShapeInference(valueType, slices, inferredReturnShapes, *location,
                              getOperationName());
 }
+
+bool LoadOp::loadsFrom(const MemorySlot &slot) {
+  return slot.ptr == getValue();
+}
+
+bool LoadOp::storesTo(const MemorySlot &slot) { return false; }
+
+Value LoadOp::getStored(const MemorySlot &slot, RewriterBase &rewriter) {
+  llvm_unreachable("getStored should not be called on LoadOp");
+}
+
+bool LoadOp::canUsesBeRemoved(
+    const MemorySlot &slot,
+    const ::llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
+    llvm::SmallVectorImpl<OpOperand *> &newBlockingUses) {
+  if (blockingUses.size() != 1) {
+    return false;
+  }
+
+  Value blockingUse = (*blockingUses.begin())->get();
+
+  return blockingUse == slot.ptr && getValue() == slot.ptr &&
+         getResult().getType() == slot.elemType;
+}
+
+DeletionKind LoadOp::removeBlockingUses(
+    const MemorySlot &slot,
+    const llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
+    RewriterBase &rewriter, Value reachingDefinition);
+bool LoadOp::canRewire(const DestructurableMemorySlot &slot,
+                       llvm::SmallPtrSetImpl<Attribute> &usedIndices,
+                       SmallVectorImpl<MemorySlot> &mustBeSafelyUsed);
+DeletionKind LoadOp::rewire(const DestructurableMemorySlot &slot,
+                            llvm::DenseMap<Attribute, MemorySlot> &subslots,
+                            RewriterBase &rewriter);
+
+/* ----------------- Store Op ------------------- */
 
 LogicalResult StoreOp::verify() {
   SmallVector<ShapedTypeComponents> slicedShapes;
