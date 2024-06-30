@@ -1,12 +1,14 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Traits.h"
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/TypeRange.h"
@@ -17,6 +19,7 @@
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
+#include "mlir/Interfaces/MemorySlotInterfaces.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -455,13 +458,46 @@ bool LoadOp::canUsesBeRemoved(
 DeletionKind LoadOp::removeBlockingUses(
     const MemorySlot &slot,
     const llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
-    RewriterBase &rewriter, Value reachingDefinition);
+    RewriterBase &rewriter, Value reachingDefinition) {
+
+  rewriter.replaceAllUsesWith(getResult(), reachingDefinition);
+  return DeletionKind::Delete;
+}
+
+Attribute getAttributeIndexFromSliceOperands(MLIRContext *ctx,
+                                             ValueRange slices,
+                                             RankedTensorType tensorType) {
+  SmallVector<Attribute> index;
+
+  for (auto [slice, dimSize] : llvm::zip(slices, tensorType.getShape())) {
+  }
+  return {};
+}
+
 bool LoadOp::canRewire(const DestructurableMemorySlot &slot,
                        llvm::SmallPtrSetImpl<Attribute> &usedIndices,
-                       SmallVectorImpl<MemorySlot> &mustBeSafelyUsed);
+                       SmallVectorImpl<MemorySlot> &mustBeSafelyUsed) {
+  if (slot.ptr != getValue()) {
+    return false;
+  }
+
+  Attribute index = getAttributeIndexFromSliceOperands(getContext(), getSlice(),
+                                                       getValueType());
+
+  if (!index) {
+    return false;
+  }
+
+  usedIndices.insert(index);
+
+  return true;
+}
+
 DeletionKind LoadOp::rewire(const DestructurableMemorySlot &slot,
                             llvm::DenseMap<Attribute, MemorySlot> &subslots,
-                            RewriterBase &rewriter);
+                            RewriterBase &rewriter) {
+  return DeletionKind::Keep;
+}
 
 /* ----------------- Store Op ------------------- */
 

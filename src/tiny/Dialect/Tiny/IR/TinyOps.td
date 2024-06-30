@@ -467,6 +467,12 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
 
   let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
   let hasFolder = 1;
+
+  let extraClassDeclaration = [{
+    RankedTensorType getValueType() {
+      return ::llvm::dyn_cast<RankedTensorType>(getValue().getType());
+    }
+  }];
 }
 
 def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments,
