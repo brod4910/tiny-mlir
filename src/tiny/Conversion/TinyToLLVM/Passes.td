@@ -3,15 +3,16 @@
 
 include "mlir/Pass/PassBase.td"
 
-def ConvertTinyToAccl : Pass<"convert-tiny-accl-to-llvm", "mlir::ModuleOp"> {
-    let summary = "Convert Tiny Accl to LLVM";
+def ConvertTinyToAccl : Pass<"convert-tiny-to-llvm", "mlir::ModuleOp"> {
+    let summary = "Convert Tiny to LLVM";
     let description = [{}];
 
-    let constructor = "mlir::tiny::createConvertTinyAcclToLLVMPass()";
+    let constructor = "mlir::tiny::createConvertTinyToLLVMPass()";
 
     let dependentDialects = ["mlir::tiny::TinyDialect",
                              "mlir::tiny::accl::AcclDialect",
-                             "mlir::NVVM::NVVMDialect"];
+                             "mlir::NVVM::NVVMDialect",
+                             "mlir::memref::MemRefDialect"];
 
     let options = [];
 

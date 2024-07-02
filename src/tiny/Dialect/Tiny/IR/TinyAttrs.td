@@ -2,13 +2,29 @@
 #define TINY_ATTRS
 
 include "tiny/Dialect/Tiny/IR/TinyDialect.td"
+include "tiny/Dialect/Tiny/IR/TinyTypes.td"
 
+include "mlir/IR/BuiltinAttributeInterfaces.td"
 include "mlir/IR/CommonAttrConstraints.td"
 include "mlir/IR/AttrTypeBase.td"
 
-class Tiny_Attr<string name, list<Trait> traits = [], string baseCppClass = "::mlir::Attribute">
+class Tiny_Attr<string name, string attrMnemonic, list<Trait> traits = [], string baseCppClass = "::mlir::Attribute">
                 : AttrDef<Tiny_Dialect, name, traits, baseCppClass> {
+  let mnemonic = ?;
   let cppNamespace = "::mlir::tiny";
+  let attrName = "tiny." # attrMnemonic;
 }
 
+def SlicedLayoutAttr : Tiny_Attr<"SlicedLayout", "sliced_layout", [MemRefLayoutAttrInterface]> {
+  let summary = "An attribute representing a sliced layout of a shaped type.";
+  let description = [{
+    
+  }];
+
+  let parameters = (ins
+    ArrayRefParameter<"SliceType", "array of slices">:$slices
+  );
+
+  let genVerifyDecl = 1;
+}
 #endif // TINY_ATTRS

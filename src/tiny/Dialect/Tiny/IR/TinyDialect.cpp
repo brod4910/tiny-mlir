@@ -1,13 +1,17 @@
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
+#include "mlir/IR/AffineExpr.h"
+#include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypeInterfaces.h"
 #include "mlir/IR/BuiltinTypes.h"
 
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Types.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/MathExtras.h"
@@ -76,4 +80,31 @@ void ShapeType::print(AsmPrinter &printer) const {
   printer.printDimensionList(getShape());
   printer << "x" << getElementType() << ">";
 }
+
+/*
+---------------------------------------------------
+----------------- TINY ATTRIBUTES -----------------
+--------------------------------------------------- */
+AffineMap makeSlicedLayoutMap(ArrayRef<SliceType> slices,
+                              MLIRContext *context) {
+  AffineExpr expr;
+
+  for (const auto &en : llvm::enumerate(slices)) {
+    auto dim = en.index();
+    auto slice = en.value();
+
+    auto d = getAffineDimExpr(dim, context);
+    AffineExpr mult;
+  }
+}
+
+/* -------------- Sliced Layout Attr -------------- */
+AffineMap SlicedLayoutAttr::getAffineMap() const { return {}; }
+
+LogicalResult SlicedLayoutAttr::verify(
+    ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+    ::llvm::ArrayRef<SliceType> slices) {
+  return success();
+}
+
 } // namespace mlir::tiny

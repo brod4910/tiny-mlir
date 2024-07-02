@@ -184,7 +184,7 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
 
 /* ------------------ NoOp Op ------------------- */
 
-OpFoldResult NoOp::fold(FoldAdaptor adaptor) { return getValue(); }
+// OpFoldResult NoOp::fold(FoldAdaptor adaptor) { return getValue(); }
 
 /*
 ---------------------------------------------------
@@ -431,73 +431,80 @@ LogicalResult LoadOp::inferReturnTypeComponents(
                              getOperationName());
 }
 
-bool LoadOp::loadsFrom(const MemorySlot &slot) {
-  return slot.ptr == getValue();
-}
+// bool LoadOp::loadsFrom(const MemorySlot &slot) {
+//   return slot.ptr == getValue();
+// }
 
-bool LoadOp::storesTo(const MemorySlot &slot) { return false; }
+// bool LoadOp::storesTo(const MemorySlot &slot) { return false; }
 
-Value LoadOp::getStored(const MemorySlot &slot, RewriterBase &rewriter) {
-  llvm_unreachable("getStored should not be called on LoadOp");
-}
+// Value LoadOp::getStored(const MemorySlot &slot, RewriterBase &rewriter) {
+//   llvm_unreachable("getStored should not be called on LoadOp");
+// }
 
-bool LoadOp::canUsesBeRemoved(
-    const MemorySlot &slot,
-    const ::llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
-    llvm::SmallVectorImpl<OpOperand *> &newBlockingUses) {
-  if (blockingUses.size() != 1) {
-    return false;
-  }
+// bool LoadOp::canUsesBeRemoved(
+//     const MemorySlot &slot,
+//     const ::llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
+//     llvm::SmallVectorImpl<OpOperand *> &newBlockingUses) {
+//   if (blockingUses.size() != 1) {
+//     return false;
+//   }
 
-  Value blockingUse = (*blockingUses.begin())->get();
+//   Value blockingUse = (*blockingUses.begin())->get();
 
-  return blockingUse == slot.ptr && getValue() == slot.ptr &&
-         getResult().getType() == slot.elemType;
-}
+//   return blockingUse == slot.ptr && getValue() == slot.ptr &&
+//          getResult().getType() == slot.elemType;
+// }
 
-DeletionKind LoadOp::removeBlockingUses(
-    const MemorySlot &slot,
-    const llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
-    RewriterBase &rewriter, Value reachingDefinition) {
+// DeletionKind LoadOp::removeBlockingUses(
+//     const MemorySlot &slot,
+//     const llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
+//     RewriterBase &rewriter, Value reachingDefinition) {
 
-  rewriter.replaceAllUsesWith(getResult(), reachingDefinition);
-  return DeletionKind::Delete;
-}
+//   rewriter.replaceAllUsesWith(getResult(), reachingDefinition);
+//   return DeletionKind::Delete;
+// }
 
-Attribute getAttributeIndexFromSliceOperands(MLIRContext *ctx,
-                                             ValueRange slices,
-                                             RankedTensorType tensorType) {
-  SmallVector<Attribute> index;
+// Attribute getAttributeIndexFromSliceOperands(MLIRContext *ctx,
+//                                              ValueRange slices,
+//                                              RankedTensorType tensorType) {
+//   SmallVector<Attribute> index;
 
-  for (auto [slice, dimSize] : llvm::zip(slices, tensorType.getShape())) {
-  }
-  return {};
-}
+//   for (auto [slice, dimSize] : llvm::zip(slices, tensorType.getShape())) {
+//     auto sliceType = dyn_cast<SliceType>(slice.getType());
+//     // The MemRef implementation of this function uses matchers to match
+//     against
+//     // constants. However, in Tiny, we strictly only allow slices to define
+//     how
+//     // we index into Tensors.
+//   }
+//   return {};
+// }
 
-bool LoadOp::canRewire(const DestructurableMemorySlot &slot,
-                       llvm::SmallPtrSetImpl<Attribute> &usedIndices,
-                       SmallVectorImpl<MemorySlot> &mustBeSafelyUsed) {
-  if (slot.ptr != getValue()) {
-    return false;
-  }
+// bool LoadOp::canRewire(const DestructurableMemorySlot &slot,
+//                        llvm::SmallPtrSetImpl<Attribute> &usedIndices,
+//                        SmallVectorImpl<MemorySlot> &mustBeSafelyUsed) {
+//   if (slot.ptr != getValue()) {
+//     return false;
+//   }
 
-  Attribute index = getAttributeIndexFromSliceOperands(getContext(), getSlice(),
-                                                       getValueType());
+//   Attribute index = getAttributeIndexFromSliceOperands(getContext(),
+//   getSlice(),
+//                                                        getValueType());
 
-  if (!index) {
-    return false;
-  }
+//   if (!index) {
+//     return false;
+//   }
 
-  usedIndices.insert(index);
+//   usedIndices.insert(index);
 
-  return true;
-}
+//   return true;
+// }
 
-DeletionKind LoadOp::rewire(const DestructurableMemorySlot &slot,
-                            llvm::DenseMap<Attribute, MemorySlot> &subslots,
-                            RewriterBase &rewriter) {
-  return DeletionKind::Keep;
-}
+// DeletionKind LoadOp::rewire(const DestructurableMemorySlot &slot,
+//                             llvm::DenseMap<Attribute, MemorySlot> &subslots,
+//                             RewriterBase &rewriter) {
+//   return DeletionKind::Keep;
+// }
 
 /* ----------------- Store Op ------------------- */
 
