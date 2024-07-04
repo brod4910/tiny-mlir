@@ -3,7 +3,7 @@
 
 include "mlir/Pass/PassBase.td"
 
-def ConvertTinyToAccl : Pass<"convert-tiny-to-llvm", "mlir::ModuleOp"> {
+def ConvertTinyToLLVM : Pass<"convert-tiny-to-llvm", "mlir::ModuleOp"> {
     let summary = "Convert Tiny to LLVM";
     let description = [{}];
 
@@ -14,7 +14,9 @@ def ConvertTinyToAccl : Pass<"convert-tiny-to-llvm", "mlir::ModuleOp"> {
                              "mlir::NVVM::NVVMDialect",
                              "mlir::memref::MemRefDialect"];
 
-    let options = [];
+    let options = [
+        // Option<"options", "llvm-options", "LowerToLLVMOptions", "{}", "llvm lowering options">
+    ];
 
 }
 

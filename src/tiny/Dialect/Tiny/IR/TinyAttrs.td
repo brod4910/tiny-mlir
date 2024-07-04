@@ -15,7 +15,7 @@ class Tiny_Attr<string name, string attrMnemonic, list<Trait> traits = [], strin
   let attrName = "tiny." # attrMnemonic;
 }
 
-def SlicedLayoutAttr : Tiny_Attr<"SlicedLayout", "sliced_layout", [MemRefLayoutAttrInterface]> {
+def Tiny_SlicedLayoutAttr : Tiny_Attr<"SlicedLayout", "sliced_layout", [DeclareAttrInterfaceMethods<MemRefLayoutAttrInterface>]> {
   let summary = "An attribute representing a sliced layout of a shaped type.";
   let description = [{
     

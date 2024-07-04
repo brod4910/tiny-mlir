@@ -9,12 +9,13 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir {
-class TinyToLLVM : public mlir::LLVMTypeConverter {
+class TinyToLLVMTypeConverter : public mlir::LLVMTypeConverter {
 public:
   using mlir::TypeConverter::convertType;
 
-  TinyToLLVM(mlir::MLIRContext *ctx, mlir::LowerToLLVMOptions &options,
-             const mlir::DataLayoutAnalysis *analysis = nullptr);
+  TinyToLLVMTypeConverter(mlir::MLIRContext *ctx,
+                          mlir::LowerToLLVMOptions &options,
+                          const mlir::DataLayoutAnalysis *analysis = nullptr);
 
   mlir::Type convertTensorType(mlir::RankedTensorType type);
 };
