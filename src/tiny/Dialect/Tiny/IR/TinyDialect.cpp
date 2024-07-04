@@ -88,23 +88,32 @@ void ShapeType::print(AsmPrinter &printer) const {
 AffineMap makeSlicedLayoutMap(ArrayRef<SliceType> slices,
                               MLIRContext *context) {
   AffineExpr expr;
+  AffineExpr bounds;
 
+  // Slice will always be equal to the length of the tensor being operated on
+  // through shape inference on Ops that use slicing mechanics.
   for (const auto &en : llvm::enumerate(slices)) {
     auto dim = en.index();
     auto slice = en.value();
 
     auto d = getAffineDimExpr(dim, context);
-    AffineExpr mult;
+    auto bounds_d = getAffineDimExpr(dim, context);
+
+    AffineExpr start = getAffineConstantExpr(slice.getStart(), context);
+    AffineExpr end = getAffineConstantExpr(*slice.getEnd(), context);
+    AffineExpr stride = getAffineConstantExpr(*slice.getStride(), context);
+
+    expr = expr + (start + d * stride);
+
+    bounds = bounds + ((end - start).floorDiv(stride));
   }
+
+  return AffineMap::get(slices.size(), 0, {expr, bounds}, context);
 }
 
 /* -------------- Sliced Layout Attr -------------- */
-AffineMap SlicedLayoutAttr::getAffineMap() const { return {}; }
-
-LogicalResult SlicedLayoutAttr::verify(
-    ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
-    ::llvm::ArrayRef<SliceType> slices) {
-  return success();
+AffineMap SlicedLayoutAttr::getAffineMap() const {
+  return makeSlicedLayoutMap(getSlices(), getContext());
 }
 
 } // namespace mlir::tiny

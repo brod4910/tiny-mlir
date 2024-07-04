@@ -24,7 +24,5 @@ def SlicedLayoutAttr : Tiny_Attr<"SlicedLayout", "sliced_layout", [MemRefLayoutA
   let parameters = (ins
     ArrayRefParameter<"SliceType", "array of slices">:$slices
   );
-
-  let genVerifyDecl = 1;
 }
 #endif // TINY_ATTRS
