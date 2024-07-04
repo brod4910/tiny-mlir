@@ -182,6 +182,24 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   return succeeded(verifyCompatibleShape(input, output));
 }
 
+/* ------------------ Cast Op ------------------- */
+
+bool BitcastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  if (inputs.size() != 1 || outputs.size() != 1) {
+    return false;
+  }
+
+  auto input = llvm::dyn_cast<TensorType>(inputs.front());
+  auto output = llvm::dyn_cast<TensorType>(outputs.front());
+
+  if (!input || !output) {
+    return false;
+  }
+
+  // The shape is required to match if both types are ranked.
+  return succeeded(verifyCompatibleShape(input, output));
+}
+
 /* ------------------ NoOp Op ------------------- */
 
 // OpFoldResult NoOp::fold(FoldAdaptor adaptor) { return getValue(); }

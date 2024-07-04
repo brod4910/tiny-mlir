@@ -1,6 +1,7 @@
 #include "tiny/Conversion/TinyToLLVM/TinyToLLVMPass.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "tiny/Conversion/TinyToLLVM/TypeConverter.h"
 
@@ -52,6 +53,8 @@ public:
 
     TinyToLLVMTypeConverter typeConverter(context, options);
     TinyLLVMConversionTarget target(*context);
+
+    RewritePatternSet patterns(context);
   }
 };
 

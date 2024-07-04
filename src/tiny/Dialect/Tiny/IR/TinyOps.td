@@ -130,6 +130,16 @@ def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterfac
     }];
 }
 
+def Tiny_BitcastOp : Tiny_UnaryOp<"Bitcast", [DeclareOpInterfaceMethods<CastOpInterface>,
+                                        Pure,
+                                        SameOperandsAndResultShape]> {
+    let summary = "Cast the value to another type without copying memory.";
+
+    let description = [{
+        An operation that casts the value to another qualified-type.
+    }];
+}
+
 def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
     let summary = "Sine of the value.";
 
