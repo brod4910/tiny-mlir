@@ -13,11 +13,6 @@ def ConvertTinyToLLVM : Pass<"convert-tiny-to-llvm", "mlir::ModuleOp"> {
                              "mlir::tiny::accl::AcclDialect",
                              "mlir::NVVM::NVVMDialect",
                              "mlir::memref::MemRefDialect"];
-
-    let options = [
-        // Option<"options", "llvm-options", "LowerToLLVMOptions", "{}", "llvm lowering options">
-    ];
-
 }
 
 #endif // TINY_CONVERSION_PASSES

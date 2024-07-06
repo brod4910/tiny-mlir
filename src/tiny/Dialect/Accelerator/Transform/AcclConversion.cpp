@@ -8,15 +8,8 @@ AcclTypeConverter::AcclTypeConverter(MLIRContext *context, int numWarps,
     : context(context), numWarps(numWarps), threadsPerWarp(threadsPerWarp) {
   // This is required?
   addConversion([](Type type) { return type; });
-
-  addConversion([this](RankedTensorType type) -> RankedTensorType {
-    if (type.getEncoding()) {
-      return type;
-    }
-    tiny::accl::CTALayoutAttr encoding =
-        tiny::accl::getDefaultCTALayout(this->context, type.getShape());
-    return RankedTensorType::get(type.getShape(), type.getElementType(),
-                                 encoding);
+  addConversion([this](RankedTensorType type) -> MemRefType {
+    return MemRefType::get(type.getShape(), type.getElementType());
   });
 }
 
