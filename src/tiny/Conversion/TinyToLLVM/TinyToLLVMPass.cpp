@@ -2,6 +2,9 @@
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
+#include "mlir/Conversion/VectorToSCF/VectorToSCF.h"
 
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -63,11 +66,13 @@ public:
     TinyLLVMConversionTarget target(*context);
 
     RewritePatternSet patterns(context);
-    populateAffineToStdConversionPatterns(patterns);
-    populateSCFToControlFlowConversionPatterns(patterns);
-    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
-    cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
     populateElementwiseOpToLLVM(typeConverter, patterns);
+    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
+    // populateAffineToStdConversionPatterns(patterns);
+    // populateVectorToSCFConversionPatterns(patterns);
+    // populateSCFToControlFlowConversionPatterns(patterns);
+    // populateVectorToLLVMConversionPatterns(typeConverter, patterns);
+    // cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
     populateFuncOpToLLVM(typeConverter, patterns);
 
     if (failed(applyPartialConversion(mod, target, std::move(patterns)))) {

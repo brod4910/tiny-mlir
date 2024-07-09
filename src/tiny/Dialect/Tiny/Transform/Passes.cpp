@@ -1,46 +1,26 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
-#include "tiny/Dialect/Tiny/IR/TinyDialect.h"
+#include "tiny/Dialect/Tiny/Transform/BufferizableOpInterfaceImpl.h"
 
+#include "mlir/Dialect/Bufferization/IR/BufferizableOpInterface.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
-#include "mlir/Tools/PDLL/CodeGen/MLIRGen.h"
-#include <mlir/IR/MLIRContext.h>
-#include <mlir/IR/PatternMatch.h>
+namespace mlir {
+namespace tiny {
+#define GEN_PASS_DEF_TINYBUFFERIZEPASS
+#include "tiny/Dialect/Tiny/Transform/Passes.h.inc"
+} // namespace tiny
+} // namespace mlir
 
-#include "mlir/Parser/Parser.h"
+using namespace mlir;
+using namespace bufferization;
 
-#include "tiny/Dialect/Tiny/Transform/Passes.inc"
+namespace {
+struct TinyBufferizePass
+    : public tiny::impl::TinyBufferizePassBase<TinyBufferizePass> {
 
-namespace mlir::tiny {
-struct RemoveRedundantOps
-    : public PassWrapper<RemoveRedundantOps, OperationPass<>> {
-
-  FrozenRewritePatternSet patterns;
-
-  StringRef getArgument() const final { return "tiny-remove-redundant"; }
-
-  StringRef getDescription() const final {
-    return "Remove Redundant Tiny Ops.";
-  }
-
-  LogicalResult initialize(MLIRContext *ctx) override {
-    // Build the pattern set within the `initialize` to avoid recompiling PDL
-    // patterns during each `runOnOperation` invocation.
-    RewritePatternSet patternList(ctx);
-    patternList.add<CastNoOpPattern>(ctx);
-    patternList.add<EraseNoOpPattern>(ctx);
-    patterns = std::move(patternList);
-    return success();
-  }
-
-  void runOnOperation() override {
-    if (applyPatternsAndFoldGreedily(getOperation(), patterns).failed()) {
-      signalPassFailure();
-    }
-  }
+  void runOnOperation() override {}
 };
-
-void registerTinyPasses() { PassRegistration<RemoveRedundantOps>(); }
-} // namespace mlir::tiny
+} // namespace

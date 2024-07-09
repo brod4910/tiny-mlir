@@ -1,4 +1,4 @@
-#include "tiny/Dialect/Accelerator/Transform//AcclConversion.h"
+#include "tiny/Dialect/Accelerator/Transform/AcclConversion.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
@@ -8,9 +8,6 @@ AcclTypeConverter::AcclTypeConverter(MLIRContext *context, int numWarps,
     : context(context), numWarps(numWarps), threadsPerWarp(threadsPerWarp) {
   // This is required?
   addConversion([](Type type) { return type; });
-  addConversion([this](RankedTensorType type) -> MemRefType {
-    return MemRefType::get(type.getShape(), type.getElementType());
-  });
 }
 
 AcclConversionTarget::AcclConversionTarget(MLIRContext &ctx,
