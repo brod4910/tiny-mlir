@@ -18,11 +18,11 @@ static bool shouldUseBarePtrCallConv(Operation *op,
          typeConverter->getOptions().useBarePtrCallConv;
 }
 
-class FuncOpLowering : public ConvertOpToLLVMPattern<FuncOp> {
-  using ConvertOpToLLVMPattern<FuncOp>::ConvertOpToLLVMPattern;
+class FuncOpLowering : public ConvertOpToLLVMPattern<func::FuncOp> {
+  using ConvertOpToLLVMPattern<func::FuncOp>::ConvertOpToLLVMPattern;
 
   LogicalResult
-  matchAndRewrite(FuncOp op, FuncOp::Adaptor adaptor,
+  matchAndRewrite(func::FuncOp op, func::FuncOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     LLVM::LLVMFuncOp newFuncOp =
         *convertFuncOpToLLVMFuncOp(cast<FunctionOpInterface>(op.getOperation()),

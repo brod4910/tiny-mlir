@@ -10,6 +10,7 @@ add_public_tablegen_target(MLIRTinyIncPassesTransforms)
 add_tiny_library(MLIRTinyTransforms
     Passes.cpp
     Patterns.cpp
+    BufferizableOpInterfaceImpl.cpp
 
     DEPENDS
     MLIRTinyIncPassesTransforms

@@ -88,8 +88,8 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["v
 // TODO: Add folders using CommonFolders
 
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
-    let arguments = (ins Tiny_ShapedType:$value);
-    let results = (outs Tiny_ShapedType:$result);
+    let arguments = (ins Tiny_ValidType:$value);
+    let results = (outs Tiny_ValidType:$result);
 
     let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
 
@@ -417,8 +417,8 @@ def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> 
   let summary = "Makes a tensor contiguous.";
 
   let description = [{
-    Initializes a new tensor by making it contiguous. This will most likely
-    this function will be most useful from a tiny.load or a tiny.view. Otherwise, use copy.
+    Initializes a new tensor by making it contiguous. This this function will be most useful 
+    from a tiny.load or a tiny.view. Otherwise, use copy.
   }];
 
   let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
@@ -550,6 +550,16 @@ def Tiny_MulAccOp : Tiny_TernaryOp<"mulacc", [
 --------------------------------------------------- 
 
             COPIED FROM THE MLIR REPO
+
+Note:
+  Mulling over this section for now. I don't think Tiny needs or wants special
+  Function semantics but that could change in the future. I found that modifying or
+  creating new function semantics to be rather difficult at this point in time (July 9 2024).
+
+  This section will just get converted to the Func dialect but may change in the future.
+  Triton modifies the func operators for inlining but i belive function inlining has improved
+  through the use of the Inliner pass located at mlir/Transforms/Passes.td not tested at this time
+  and this is just an assumption to be proven correct or incorrect later.
 */
 
 

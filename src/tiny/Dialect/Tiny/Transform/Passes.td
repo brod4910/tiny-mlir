@@ -10,4 +10,14 @@ def TinyBufferizePass : Pass<"tiny-bufferize", "ModuleOp"> {
     }];
 }
 
+def TinyElementwiseToLinalg : Pass<"convert-tiny-elementwise-to-linalg", ""> {
+    let summary = "Convert Tiny elementwise ops to Linalg ops";
+    let description = [{
+        This transforms tiny elementwise ops to linalg ops.
+    }];
+
+    let dependentDialects = ["tiny::TinyDialect", "tiny::accl::AcclDialect", 
+                             "linalg::LinalgDialect", "memref::MemRefDialect"];
+}
+
 #endif //  TINY_TRANSFORM_PASSES

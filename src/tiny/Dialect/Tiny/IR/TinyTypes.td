@@ -32,6 +32,8 @@ def Tiny_FloatMemRef : Non0RankedMemRefOf<[Tiny_Float]>;
 def Tiny_ShapedType : AnyTypeOf<[Tiny_Tensor, Tiny_MemRef]>;
 def Tiny_FloatShapedType : AnyTypeOf<[Tiny_FloatTensor, Tiny_FloatMemRef]>;
 
+def Tiny_ValidType : AnyTypeOf<[Tiny_ShapedType, Tiny_ElementType]>;
+
 class Tiny_Type<string name, list<Trait> traits = [], 
                 string baseCppClass = "::mlir::Type"> 
     : TypeDef<Tiny_Dialect, name, traits, baseCppClass> {

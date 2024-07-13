@@ -4,6 +4,7 @@
 #include "tiny/Conversion/TinyToAccl/Passes.h"
 #include "tiny/Conversion/TinyToLLVM/Passes.h"
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
+#include "tiny/Dialect/Tiny/Transform/Patterns.h"
 
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
@@ -16,7 +17,9 @@ int main(int argc, char **argv) {
   mlir::registerAllDialects(registry);
 
   mlir::registerAllPasses();
-  mlir::tiny::registerTinyPasses();
+  mlir::tiny::registerTinyPatterns();
+  mlir::tiny::registerTinyBufferizePass();
+  mlir::tiny::registerTinyElementwiseToLinalgPass();
   mlir::tiny::registerTinyToAcclPasses();
   mlir::tiny::registerTinyToLLVMPasses();
 

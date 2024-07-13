@@ -42,5 +42,5 @@ struct RemoveRedundantOps
   }
 };
 
-void registerTinyPasses() { PassRegistration<RemoveRedundantOps>(); }
+void registerTinyPatterns() { PassRegistration<RemoveRedundantOps>(); }
 } // namespace mlir::tiny
