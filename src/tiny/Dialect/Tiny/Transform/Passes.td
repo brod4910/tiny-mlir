@@ -16,8 +16,9 @@ def TinyElementwiseToLinalg : Pass<"convert-tiny-elementwise-to-linalg", ""> {
         This transforms tiny elementwise ops to linalg ops.
     }];
 
+    let constructor = "tiny::createConvertTinyElementwiseToLinalgPass()";
     let dependentDialects = ["tiny::TinyDialect", "tiny::accl::AcclDialect", 
-                             "linalg::LinalgDialect", "memref::MemRefDialect"];
+                             "linalg::LinalgDialect", "scf::SCFDialect"];
 }
 
 #endif //  TINY_TRANSFORM_PASSES

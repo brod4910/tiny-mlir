@@ -14,17 +14,17 @@
 
 int main(int argc, char **argv) {
   mlir::DialectRegistry registry;
+  registry.insert<mlir::tiny::TinyDialect>();
+  registry.insert<mlir::tiny::accl::AcclDialect>();
+
   mlir::registerAllDialects(registry);
 
   mlir::registerAllPasses();
   mlir::tiny::registerTinyPatterns();
-  mlir::tiny::registerTinyBufferizePass();
-  mlir::tiny::registerTinyElementwiseToLinalgPass();
+  mlir::tiny::registerTinyTransformPasses();
   mlir::tiny::registerTinyToAcclPasses();
   mlir::tiny::registerTinyToLLVMPasses();
 
-  registry.insert<mlir::tiny::TinyDialect>();
-  registry.insert<mlir::tiny::accl::AcclDialect>();
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "Tiny Pass Driver", registry));
 }

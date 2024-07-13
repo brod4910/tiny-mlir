@@ -6,6 +6,8 @@ namespace mlir::tiny {
 #define GEN_PASS_DECL
 #include "tiny/Dialect/Tiny/Transform/Passes.h.inc"
 
+std::unique_ptr<Pass> createConvertTinyElementwiseToLinalgPass();
+
 //===----------------------------------------------------------------------===//
 // Registration
 //===----------------------------------------------------------------------===//

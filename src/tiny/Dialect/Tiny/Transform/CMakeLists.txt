@@ -2,7 +2,7 @@ add_mlir_pdll_library(MLIRTinyIncPatternTransforms Patterns.pdll Patterns.h.inc 
                       ${MLIR_INCLUDE_DIR})
 
 set(LLVM_TARGET_DEFINITIONS Passes.td)
-mlir_tablegen(Passes.h.inc -gen-pass-decls --name TinyTransformPasses)
+mlir_tablegen(Passes.h.inc -gen-pass-decls --name TinyTransform)
 add_public_tablegen_target(MLIRTinyIncPassesTransforms)
 
 

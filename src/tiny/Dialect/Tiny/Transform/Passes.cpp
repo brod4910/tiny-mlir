@@ -1,4 +1,5 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
+#include "mlir/IR/Diagnostics.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 #include "tiny/Dialect/Tiny/Transform/BufferizableOpInterfaceImpl.h"
@@ -45,7 +46,7 @@ static bool isElementwiseMappableOpOnRankedTensors(Operation *op) {
 struct TinyBufferizePass
     : public tiny::impl::TinyBufferizePassBase<TinyBufferizePass> {
   using TinyBufferizePassBase::TinyBufferizePassBase;
-  void runOnOperation() override {
+  void runOnOperation() final {
     auto module = getOperation();
     auto *context = &getContext();
 
@@ -92,26 +93,28 @@ struct TinyBufferizePass
 struct TinyElementwiseToLinalgPass
     : public tiny::impl::TinyElementwiseToLinalgBase<
           TinyElementwiseToLinalgPass> {
-  using TinyElementwiseToLinalgBase::TinyElementwiseToLinalgBase;
+  using tiny::impl::TinyElementwiseToLinalgBase<
+      TinyElementwiseToLinalgPass>::TinyElementwiseToLinalgBase;
 
-  void runOnOperation() override {
-    auto op = getOperation();
+  void runOnOperation() final {
+    auto *func = getOperation();
     auto *context = &getContext();
 
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
-
-    target.addLegalDialect<tiny::TinyDialect, linalg::LinalgDialect,
-                           scf::SCFDialect>();
 
     linalg::populateElementwiseToLinalgConversionPatterns(patterns);
     target.markUnknownOpDynamicallyLegal([](Operation *op) {
       return !isElementwiseMappableOpOnRankedTensors(op);
     });
 
-    if (failed(applyPartialConversion(op, target, std::move(patterns)))) {
+    if (failed(applyPartialConversion(func, target, std::move(patterns)))) {
       signalPassFailure();
     }
   }
 };
 } // namespace
+
+std::unique_ptr<Pass> mlir::tiny::createConvertTinyElementwiseToLinalgPass() {
+  return std::make_unique<TinyElementwiseToLinalgPass>();
+}
