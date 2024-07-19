@@ -11,7 +11,9 @@ def ConvertTinyToAccl : Pass<"convert-tiny-to-accl", "mlir::ModuleOp"> {
 
     let dependentDialects = ["mlir::tiny::TinyDialect",
                              "mlir::tiny::accl::AcclDialect",
-                             "mlir::scf::SCFDialect"];
+                             "mlir::scf::SCFDialect",
+                             "mlir::cf::ControlFlowDialect",
+                             "mlir::func::FuncDialect"];
 
     // TODO: Compute blocks should be the method for general computation
     // abstraction.

@@ -5,6 +5,7 @@
 #include "tiny/Dialect/Tiny/Transform/BufferizableOpInterfaceImpl.h"
 
 #include "mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -50,36 +51,11 @@ struct TinyBufferizePass
     auto module = getOperation();
     auto *context = &getContext();
 
-    bufferization::BufferizeTypeConverter typeConverter;
-    RewritePatternSet patterns(context);
-    ConversionTarget target(*context);
+    BufferizationOptions options = getPartialBufferizationOptions();
+    options.opFilter.allowDialect<tiny::TinyDialect>();
 
-    /*
-      Function Op patterns (func, call, return)
-    */
-    populateFunctionOpInterfaceTypeConversionPattern<tiny::FuncOp>(
-        patterns, typeConverter);
-    target.addDynamicallyLegalOp<tiny::FuncOp>([&](tiny::FuncOp op) {
-      return typeConverter.isSignatureLegal(op.getFunctionType()) &&
-             typeConverter.isLegal(&op.getBody());
-    });
-    populateCallOpTypeConversionPattern(patterns, typeConverter);
-    target.addDynamicallyLegalOp<tiny::CallOp>(
-        [&](tiny::CallOp op) { return typeConverter.isLegal(op); });
-
-    populateReturnOpTypeConversionPattern(patterns, typeConverter);
-
-    target.addLegalOp<ModuleOp, bufferization::ToTensorOp,
-                      bufferization::ToMemrefOp>();
-
-    if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
-      signalPassFailure();
-    }
-
-    OneShotBufferizationOptions options;
-
-    if (failed(runOneShotBufferize(module, options))) {
-      signalPassFailure();
+    if (failed(bufferizeOp(getOperation(), options))) {
+      return signalPassFailure();
     }
   }
 
