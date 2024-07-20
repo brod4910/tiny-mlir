@@ -21,4 +21,17 @@ def TinyElementwiseToLinalg : Pass<"convert-tiny-elementwise-to-linalg", ""> {
                              "linalg::LinalgDialect", "scf::SCFDialect"];
 }
 
+def ConvertTinyFuncOps : Pass<"convert-tiny-func-ops", ""> {
+    let summary = "Simple conversion for Tiny Func Ops to FuncDialect ops.";
+    let description = [{
+        A simple passthrough conversion for the func ops in the Tiny Dialect to
+        the func ops in the Func Dialect.
+
+        This may get removed in the future depending on if Tiny requires special
+        function semantics. I see no need ATM (7/19/24).
+    }];
+
+    let dependentDialects = ["tiny::TinyDiact", "func::FuncDialect"];
+}
+
 #endif //  TINY_TRANSFORM_PASSES

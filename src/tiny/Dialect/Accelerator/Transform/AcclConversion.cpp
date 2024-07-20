@@ -16,17 +16,16 @@ AcclConversionTarget::AcclConversionTarget(MLIRContext &ctx,
                                            AcclTypeConverter &typeConverter)
     : ConversionTarget(ctx) {
   addLegalDialect<tiny::accl::AcclDialect, func::FuncDialect>();
-  // addDynamicallyLegalDialect<scf::SCFDialect, cf::ControlFlowDialect>(
-  //     [&](Operation *op) -> bool {
-  //       bool hasLegalRegions = true;
-  //       for (auto &region : op->getRegions()) {
-  //         hasLegalRegions = hasLegalRegions &&
-  //         typeConverter.isLegal(&region);
-  //       }
-  //       if (hasLegalRegions && typeConverter.isLegal(op)) {
-  //         return true;
-  //       }
-  //       return false;
-  //     });
+  addDynamicallyLegalDialect<scf::SCFDialect, cf::ControlFlowDialect>(
+      [&](Operation *op) -> bool {
+        bool hasLegalRegions = true;
+        for (auto &region : op->getRegions()) {
+          hasLegalRegions = hasLegalRegions && typeConverter.isLegal(&region);
+        }
+        if (hasLegalRegions && typeConverter.isLegal(op)) {
+          return true;
+        }
+        return false;
+      });
 }
 } // namespace mlir

@@ -98,78 +98,29 @@ struct ConstantPattern : public OpConversionPattern<tiny::ConstantOp> {
   }
 };
 
-struct FuncOpPattern : public OpConversionPattern<tiny::FuncOp> {
-  using OpConversionPattern::OpConversionPattern;
-
-  LogicalResult
-  matchAndRewrite(tiny::FuncOp op, tiny::FuncOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    auto newOp = rewriter.replaceOpWithNewOp<func::FuncOp>(
-        op, op.getName(), op.getFunctionType());
-    auto converter = getTypeConverter();
-
-    addNamedAttrs(newOp, adaptor.getAttributes());
-    // rewriter.inlineRegionBefore(op.getBody(), newOp.getBody(),
-    //                             newOp.getBody().end());
-    // if (failed(rewriter.convertRegionTypes(&newOp.getBody(), *converter)))
-    //   return failure();
-
-    return success();
-  }
-};
-
-class CallOpPattern : public OpConversionPattern<tiny::CallOp> {
-public:
-  using OpConversionPattern::OpConversionPattern;
-
-  LogicalResult
-  matchAndRewrite(tiny::CallOp op, tiny::CallOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    auto newOp = rewriter.replaceOpWithNewOp<func::CallOp>(
-        op, op.getCallee(), op.getResultTypes(), adaptor.getOperands());
-    addNamedAttrs(newOp, adaptor.getAttributes());
-    return success();
-  }
-};
-
-class ReturnOpPattern : public OpConversionPattern<tiny::ReturnOp> {
-public:
-  using OpConversionPattern::OpConversionPattern;
-
-  LogicalResult
-  matchAndRewrite(tiny::ReturnOp op, tiny::ReturnOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, adaptor.getOperands());
-    return success();
-  }
-};
-
 void populateTinyPatternsAndLegality(AcclTypeConverter &typeConverter,
                                      RewritePatternSet &patterns) {
   MLIRContext *context = typeConverter.getContext();
   patterns.add<ConstantPattern,
-               //  /* -------- Unary Patterns -------- */
-               //  PassThroughUnaryPattern<tiny::BitcastOp>,
-               //  PassThroughUnaryPattern<tiny::CastOp>,
-               //  PassThroughUnaryPattern<tiny::Exp2Op>,
-               //  PassThroughUnaryPattern<tiny::Log2Op>,
-               //  PassThroughUnaryPattern<tiny::NoOp>,
-               //  PassThroughUnaryPattern<tiny::NegOp>,
-               //  PassThroughUnaryPattern<tiny::RecipOp>,
-               //  PassThroughUnaryPattern<tiny::SinOp>,
-               //  PassThroughUnaryPattern<tiny::SqrtOp>,
-               //  /* -------- Binary Patterns -------- */
-               //  PassThroughBinaryPattern<tiny::AddOp>,
-               //  PassThroughBinaryPattern<tiny::SubOp>,
-               //  PassThroughBinaryPattern<tiny::MulOp>,
-               //  PassThroughBinaryPattern<tiny::DivOp>,
-               //  PassThroughBinaryPattern<tiny::CmpNeOp>,
-               //  PassThroughBinaryPattern<tiny::CmpLtOp>,
-               //  PassThroughBinaryPattern<tiny::MaximumOp>,
-               //  PassThroughBinaryPattern<tiny::ModOp>,
-               /* -------- Func Patterns -------- */
-               FuncOpPattern, ReturnOpPattern, CallOpPattern>(typeConverter,
-                                                              context);
+               /* -------- Unary Patterns -------- */
+               PassThroughUnaryPattern<tiny::BitcastOp>,
+               PassThroughUnaryPattern<tiny::CastOp>,
+               PassThroughUnaryPattern<tiny::Exp2Op>,
+               PassThroughUnaryPattern<tiny::Log2Op>,
+               PassThroughUnaryPattern<tiny::NoOp>,
+               PassThroughUnaryPattern<tiny::NegOp>,
+               PassThroughUnaryPattern<tiny::RecipOp>,
+               PassThroughUnaryPattern<tiny::SinOp>,
+               PassThroughUnaryPattern<tiny::SqrtOp>,
+               /* -------- Binary Patterns -------- */
+               PassThroughBinaryPattern<tiny::AddOp>,
+               PassThroughBinaryPattern<tiny::SubOp>,
+               PassThroughBinaryPattern<tiny::MulOp>,
+               PassThroughBinaryPattern<tiny::DivOp>,
+               PassThroughBinaryPattern<tiny::CmpNeOp>,
+               PassThroughBinaryPattern<tiny::CmpLtOp>,
+               PassThroughBinaryPattern<tiny::MaximumOp>,
+               PassThroughBinaryPattern<tiny::ModOp>>(typeConverter, context);
 }
 
 class ConvertTinyToAccl
