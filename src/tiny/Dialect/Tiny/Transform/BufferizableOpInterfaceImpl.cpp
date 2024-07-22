@@ -1,4 +1,6 @@
 #include "tiny/Dialect/Tiny/Transform/BufferizableOpInterfaceImpl.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/Interfaces/FunctionInterfaces.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -20,9 +22,6 @@ using namespace mlir::bufferization;
 namespace mlir::tiny {
 namespace {
 /*
-ElementwiseMappable ops don't require bufferization interface implementation
-since they get converted through the -convert-elementwise-to-linalg.
-
 Elementwise Mappable Ops:
     * Exp2Op
     * Log2Op
@@ -34,8 +33,26 @@ Elementwise Mappable Ops:
 
 */
 
+struct FuncOpInterface
+    : public BufferizableOpInterface::ExternalModel<FuncOpInterface,
+                                                    tiny::FuncOp> {
+  bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
+                              const AnalysisState &state) const {
+    return false;
+  }
+
+  bool bufferizesToMemoryWrite(Operation *op, OpOperand &opOperand,
+                               const AnalysisState &state) const {
+    return false;
+  }
+};
+
 } // namespace
 } // namespace mlir::tiny
 
 void tiny::registerBufferizableOpInterfaceExternalModels(
-    DialectRegistry &registery) {}
+    DialectRegistry &registery) {
+  registery.addExtension(+[](MLIRContext *context, tiny::TinyDialect *dialect) {
+    tiny::FuncOp::attachInterface<FuncOpInterface>(*context);
+  });
+}

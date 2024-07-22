@@ -1,12 +1,13 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/PatternMatch.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 #include "tiny/Dialect/Tiny/Transform/BufferizableOpInterfaceImpl.h"
 
-#include "mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
@@ -22,7 +23,6 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
 #include <memory>
-#include <sys/signal.h>
 
 namespace mlir {
 namespace tiny {
@@ -99,54 +99,51 @@ static void addNamedAttrs(Operation *op, DictionaryAttr dictAttrs) {
       op->setAttr(attr.getName(), attr.getValue());
 }
 
-struct FuncOpPattern : PatternRewriter {
-  using OpConversionPattern::OpConversionPattern;
+struct FuncOpPattern : OpRewritePattern<tiny::FuncOp> {
+  FuncOpPattern(MLIRContext *context)
+      : OpRewritePattern<tiny::FuncOp>(context) {}
 
-  LogicalResult
-  matchAndRewrite(tiny::FuncOp op, tiny::FuncOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
+  LogicalResult matchAndRewrite(tiny::FuncOp op,
+                                PatternRewriter &rewriter) const override {
     auto newOp = rewriter.replaceOpWithNewOp<func::FuncOp>(
         op, op.getName(), op.getFunctionType());
-    auto converter = getTypeConverter();
 
-    addNamedAttrs(newOp, adaptor.getAttributes());
+    addNamedAttrs(newOp, op->getAttrDictionary());
     rewriter.inlineRegionBefore(op.getBody(), newOp.getBody(),
                                 newOp.getBody().end());
-    if (failed(rewriter.convertRegionTypes(&newOp.getBody(), *converter)))
-      return failure();
-
     return success();
   }
 };
 
-class CallOpPattern : public OpConversionPattern<tiny::CallOp> {
+class CallOpPattern : public OpRewritePattern<tiny::CallOp> {
 public:
-  using OpConversionPattern::OpConversionPattern;
+  CallOpPattern(MLIRContext *context)
+      : OpRewritePattern<tiny::CallOp>(context) {}
 
-  LogicalResult
-  matchAndRewrite(tiny::CallOp op, tiny::CallOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
+  LogicalResult matchAndRewrite(tiny::CallOp op,
+                                PatternRewriter &rewriter) const override {
     auto newOp = rewriter.replaceOpWithNewOp<func::CallOp>(
-        op, op.getCallee(), op.getResultTypes(), adaptor.getOperands());
-    addNamedAttrs(newOp, adaptor.getAttributes());
+        op, op.getCallee(), op.getResultTypes(), op->getOperands());
+    addNamedAttrs(newOp, op->getAttrDictionary());
     return success();
   }
 };
 
-class ReturnOpPattern : public OpConversionPattern<tiny::ReturnOp> {
+class ReturnOpPattern : public OpRewritePattern<tiny::ReturnOp> {
 public:
-  using OpConversionPattern::OpConversionPattern;
+  ReturnOpPattern(MLIRContext *context)
+      : OpRewritePattern<tiny::ReturnOp>(context) {}
 
-  LogicalResult
-  matchAndRewrite(tiny::ReturnOp op, tiny::ReturnOp::Adaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, adaptor.getOperands());
+  LogicalResult matchAndRewrite(tiny::ReturnOp op,
+                                PatternRewriter &rewriter) const override {
+    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, op.getOperands());
     return success();
   }
 };
 
-void populateTinyFuncOpPatterns(RewritePatternSet &patterns) {
-  patterns.add<FuncOpPattern, ReturnOpPattern, CallOpPattern>();
+void populateTinyFuncOpPatterns(MLIRContext *context,
+                                RewritePatternSet &patterns) {
+  patterns.add<FuncOpPattern, ReturnOpPattern, CallOpPattern>(context);
 }
 
 struct ConvertTinyFuncOps
@@ -160,8 +157,9 @@ struct ConvertTinyFuncOps
 
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
+    target.addLegalDialect<func::FuncDialect>();
 
-    populateTinyFuncOpPatterns(patterns);
+    populateTinyFuncOpPatterns(context, patterns);
 
     if (failed(applyPartialConversion(func, target, std::move(patterns)))) {
       signalPassFailure();
@@ -169,11 +167,3 @@ struct ConvertTinyFuncOps
   }
 };
 } // namespace
-
-std::unique_ptr<Pass> mlir::tiny::createConvertTinyElementwiseToLinalgPass() {
-  return std::make_unique<TinyElementwiseToLinalgPass>();
-}
-
-// std::unique_ptr<Pass> mlir::tiny::createConvertTinyFuncOps() {
-//   return std::make_unique<ConvertTinyFuncOps>();
-// }

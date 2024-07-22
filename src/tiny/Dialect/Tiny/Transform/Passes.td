@@ -16,7 +16,6 @@ def TinyElementwiseToLinalg : Pass<"convert-tiny-elementwise-to-linalg", ""> {
         This transforms tiny elementwise ops to linalg ops.
     }];
 
-    let constructor = "tiny::createConvertTinyElementwiseToLinalgPass()";
     let dependentDialects = ["tiny::TinyDialect", "tiny::accl::AcclDialect", 
                              "linalg::LinalgDialect", "scf::SCFDialect"];
 }
@@ -31,7 +30,7 @@ def ConvertTinyFuncOps : Pass<"convert-tiny-func-ops", ""> {
         function semantics. I see no need ATM (7/19/24).
     }];
 
-    let dependentDialects = ["tiny::TinyDiact", "func::FuncDialect"];
+    let dependentDialects = ["tiny::TinyDialect", "func::FuncDialect"];
 }
 
 #endif //  TINY_TRANSFORM_PASSES
