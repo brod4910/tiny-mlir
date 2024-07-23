@@ -1,11 +1,15 @@
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
+#include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
 #include "mlir/Conversion/VectorToSCF/VectorToSCF.h"
 
+#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -34,22 +38,6 @@ using namespace mlir::tiny;
 using namespace mlir::tiny::accl;
 
 namespace {
-class TinyLLVMConversionTarget : public ConversionTarget {
-public:
-  explicit TinyLLVMConversionTarget(MLIRContext &context)
-      : ConversionTarget(context) {
-    addLegalDialect<LLVM::LLVMDialect>();
-    addLegalDialect<NVVM::NVVMDialect>();
-
-    addIllegalDialect<tiny::TinyDialect>();
-    addIllegalDialect<tiny::accl::AcclDialect>();
-    addIllegalDialect<memref::MemRefDialect>();
-    addIllegalDialect<affine::AffineDialect>();
-
-    addLegalOp<mlir::UnrealizedConversionCastOp>();
-  }
-};
-
 class ConvertTinyToLLVM
     : public ::impl::ConvertTinyToLLVMBase<ConvertTinyToLLVM> {
 public:
@@ -63,17 +51,22 @@ public:
     options.overrideIndexBitwidth(32);
 
     LLVMTypeConverter typeConverter(context, options);
-    TinyLLVMConversionTarget target(*context);
+    // TinyLLVMConversionTarget target(*context);
+    LLVMConversionTarget target(getContext());
 
     RewritePatternSet patterns(context);
+    populateSCFToControlFlowConversionPatterns(patterns);
     populateElementwiseOpToLLVM(typeConverter, patterns);
     populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
+    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    // TODO: Ideally remove this conversion pattern in favor of just using tiny
+    // directly.
+    arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+    cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
     // populateAffineToStdConversionPatterns(patterns);
     // populateVectorToSCFConversionPatterns(patterns);
-    // populateSCFToControlFlowConversionPatterns(patterns);
     // populateVectorToLLVMConversionPatterns(typeConverter, patterns);
-    // cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-    populateFuncOpToLLVM(typeConverter, patterns);
+    populateReconcileUnrealizedCastsPatterns(patterns);
 
     if (failed(applyPartialConversion(mod, target, std::move(patterns)))) {
       return signalPassFailure();
