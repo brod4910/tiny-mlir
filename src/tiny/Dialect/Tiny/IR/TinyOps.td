@@ -218,8 +218,8 @@ def Tiny_SumOp : Tiny_ReduceOp<"sum", [
 // TODO: Add folders using CommonFolders
 
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_ShapedType: $lhs, Tiny_ShapedType: $rhs);
-  let results = (outs Tiny_ShapedType: $result);
+  let arguments = (ins Tiny_ValidType: $lhs, Tiny_ValidType: $rhs);
+  let results = (outs Tiny_ValidType: $result);
   
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
@@ -437,7 +437,7 @@ def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> 
 }
 
 def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_ShapedType: $value, Variadic<Tiny_SliceType>:$slice);
+  let arguments = (ins Tiny_ShapedType: $value, Tiny_ShapeType:$shape);
   let results = (outs Tiny_ShapedType: $result);
 
   let summary = "Creates a view of a tensor.";
@@ -446,7 +446,7 @@ def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
     Initializes a new tensor which is a view of the operand.
   }];
 
-  let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value `,` $shape attr-dict `:` functional-type(operands, results)";
 }
 
 // TODO: Pure?
@@ -460,7 +460,7 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
     Initializes a new tensor with random values between 0-1.
   }];
 
-  let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$shape attr-dict `:` functional-type(operands, results)";
 }
 
 /* 

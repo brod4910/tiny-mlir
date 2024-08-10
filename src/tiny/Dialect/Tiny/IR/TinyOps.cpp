@@ -407,6 +407,24 @@ LogicalResult ShrOp::inferReturnTypeComponents(
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
 
+LogicalResult
+ViewShapeInference(RankedTensorType valueType, ShapeType shapeType,
+                   SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes,
+                   Location loc, StringLiteral opName) {
+  int64_t tensor_numel = valueType.getNumElements();
+  int64_t shape_numel = shapeType.getNumElements();
+
+  if (tensor_numel != shape_numel) {
+    return emitError(loc, "Tensor and Shape numel not equal: ")
+           << tensor_numel << " != " << shape_numel;
+  }
+
+  SmallVector<int64_t> resultShape{shapeType.getShape().begin(),
+                                   shapeType.getShape().end()};
+  inferredReturnShapes.emplace_back(resultShape, shapeType.getElementType());
+  return success();
+}
+
 /* ------------------ Empty Op -------------------- */
 
 LogicalResult EmptyOp::inferReturnTypeComponents(
@@ -425,10 +443,9 @@ LogicalResult ViewOp::inferReturnTypeComponents(
     ViewOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
-  auto slices = adaptor.getSlice();
-
-  return SliceShapeInference(valueType, slices, inferredReturnShapes, *location,
-                             getOperationName());
+  auto shapeType = dyn_cast<ShapeType>(adaptor.getShape().getType());
+  return ViewShapeInference(valueType, shapeType, inferredReturnShapes,
+                            *location, getOperationName());
 }
 
 /*
@@ -448,81 +465,6 @@ LogicalResult LoadOp::inferReturnTypeComponents(
   return SliceShapeInference(valueType, slices, inferredReturnShapes, *location,
                              getOperationName());
 }
-
-// bool LoadOp::loadsFrom(const MemorySlot &slot) {
-//   return slot.ptr == getValue();
-// }
-
-// bool LoadOp::storesTo(const MemorySlot &slot) { return false; }
-
-// Value LoadOp::getStored(const MemorySlot &slot, RewriterBase &rewriter) {
-//   llvm_unreachable("getStored should not be called on LoadOp");
-// }
-
-// bool LoadOp::canUsesBeRemoved(
-//     const MemorySlot &slot,
-//     const ::llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
-//     llvm::SmallVectorImpl<OpOperand *> &newBlockingUses) {
-//   if (blockingUses.size() != 1) {
-//     return false;
-//   }
-
-//   Value blockingUse = (*blockingUses.begin())->get();
-
-//   return blockingUse == slot.ptr && getValue() == slot.ptr &&
-//          getResult().getType() == slot.elemType;
-// }
-
-// DeletionKind LoadOp::removeBlockingUses(
-//     const MemorySlot &slot,
-//     const llvm::SmallPtrSetImpl<OpOperand *> &blockingUses,
-//     RewriterBase &rewriter, Value reachingDefinition) {
-
-//   rewriter.replaceAllUsesWith(getResult(), reachingDefinition);
-//   return DeletionKind::Delete;
-// }
-
-// Attribute getAttributeIndexFromSliceOperands(MLIRContext *ctx,
-//                                              ValueRange slices,
-//                                              RankedTensorType tensorType) {
-//   SmallVector<Attribute> index;
-
-//   for (auto [slice, dimSize] : llvm::zip(slices, tensorType.getShape())) {
-//     auto sliceType = dyn_cast<SliceType>(slice.getType());
-//     // The MemRef implementation of this function uses matchers to match
-//     against
-//     // constants. However, in Tiny, we strictly only allow slices to define
-//     how
-//     // we index into Tensors.
-//   }
-//   return {};
-// }
-
-// bool LoadOp::canRewire(const DestructurableMemorySlot &slot,
-//                        llvm::SmallPtrSetImpl<Attribute> &usedIndices,
-//                        SmallVectorImpl<MemorySlot> &mustBeSafelyUsed) {
-//   if (slot.ptr != getValue()) {
-//     return false;
-//   }
-
-//   Attribute index = getAttributeIndexFromSliceOperands(getContext(),
-//   getSlice(),
-//                                                        getValueType());
-
-//   if (!index) {
-//     return false;
-//   }
-
-//   usedIndices.insert(index);
-
-//   return true;
-// }
-
-// DeletionKind LoadOp::rewire(const DestructurableMemorySlot &slot,
-//                             llvm::DenseMap<Attribute, MemorySlot> &subslots,
-//                             RewriterBase &rewriter) {
-//   return DeletionKind::Keep;
-// }
 
 /* ----------------- Store Op ------------------- */
 
