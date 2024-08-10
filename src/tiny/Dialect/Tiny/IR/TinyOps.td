@@ -34,6 +34,10 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- Traits -----------------------
 --------------------------------------------------- */
 
+def ElementwiseBroadcastable : NativeOpTrait<"ElementwiseBroadcastable"> {
+  let cppNamespace = "mlir::tiny";
+}
+
 /* 
 --------------------------------------------------- 
 ------------------ UTILITY OPS --------------------
@@ -257,7 +261,7 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
                                        Pure,
-                                       ElementwiseMappable,
+                                       ElementwiseBroadcastable,
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
@@ -270,8 +274,8 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
 
 def Tiny_DivOp : Tiny_BinaryOp<"div", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       Pure,
                                        ElementwiseMappable, 
+                                       Pure,
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
@@ -286,7 +290,7 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                            Commutative,
                                            ElementwiseMappable,
-                                           Pure, 
+                                           Pure,
                                            ResultsBroadcastableShape, 
                                            SameOperandsAndResultElementType
                                           ]> {
