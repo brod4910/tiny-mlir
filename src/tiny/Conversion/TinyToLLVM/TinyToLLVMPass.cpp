@@ -60,7 +60,8 @@ public:
     populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
     populateFuncToLLVMConversionPatterns(typeConverter, patterns);
     // TODO: Ideally remove this conversion pattern in favor of just using tiny
-    // directly.
+    // directly. This lowers arith.const generated from passes, more
+    // specifically lower-affine
     arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
     cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
     // populateAffineToStdConversionPatterns(patterns);

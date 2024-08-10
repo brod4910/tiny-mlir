@@ -227,6 +227,7 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_AddOp : Tiny_BinaryOp<"add", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
+                                       ElementwiseMappable,
                                        Pure,
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
@@ -240,7 +241,8 @@ def Tiny_AddOp : Tiny_BinaryOp<"add", [
 
 def Tiny_SubOp : Tiny_BinaryOp<"sub", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       Pure, 
+                                       ElementwiseMappable,
+                                       Pure,
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
@@ -255,6 +257,7 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
                                        Pure,
+                                       ElementwiseMappable,
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
@@ -267,7 +270,8 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
 
 def Tiny_DivOp : Tiny_BinaryOp<"div", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       Pure, 
+                                       Pure,
+                                       ElementwiseMappable, 
                                        ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
@@ -280,6 +284,8 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
 
 def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                           Commutative,
+                                           ElementwiseMappable,
                                            Pure, 
                                            ResultsBroadcastableShape, 
                                            SameOperandsAndResultElementType
@@ -293,7 +299,8 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
 
 def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                           Pure, 
+                                           ElementwiseMappable,
+                                           Pure,
                                            ResultsBroadcastableShape, 
                                            SameOperandsAndResultElementType
                                           ]> {
@@ -306,8 +313,9 @@ def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
 
 def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
                                                DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                               Pure, 
                                                Commutative,
+                                               ElementwiseMappable,
+                                               Pure, 
                                                ResultsBroadcastableShape, 
                                                SameOperandsAndResultElementType
                                               ]> {
@@ -320,7 +328,8 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 
 def Tiny_ModOp : Tiny_BinaryOp<"mod", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
+                                        ElementwiseMappable,
+                                        Pure,
                                         ResultsBroadcastableShape, 
                                         SameOperandsAndResultElementType
                                       ]> {
@@ -333,8 +342,9 @@ def Tiny_ModOp : Tiny_BinaryOp<"mod", [
 
 def Tiny_XOROp : Tiny_BinaryOp<"xor", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
                                         Commutative,
+                                        ElementwiseMappable,
+                                        Pure, 
                                         ResultsBroadcastableShape, 
                                         SameOperandsAndResultElementType
                                       ]> {
@@ -347,7 +357,8 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
 
 def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
+                                        ElementwiseMappable,
+                                        Pure
                                       ]> {
   let arguments = (ins Tiny_ShapedType: $lhs, IndexAttr: $rhs);
   let summary = "Shift LHS right by RHS.";
@@ -361,7 +372,8 @@ def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
 
 def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
+                                        ElementwiseMappable,
+                                        Pure
                                       ]> {
   let arguments = (ins Tiny_ShapedType: $lhs, IndexAttr: $rhs);
   let summary = "Shift LHS left by RHS.";
@@ -519,6 +531,7 @@ class Tiny_TernaryOp<string mnemonic, list<Trait> traits = []> :  Tiny_Op<mnemon
 
 def Tiny_WhereOp : Tiny_TernaryOp<"where", [
                                             InferTensorTypeAdaptor,
+                                            ElementwiseMappable,
                                             Pure
                                            ]> {
   // override args since they have more semantic meaning for where ops.
@@ -535,6 +548,7 @@ def Tiny_WhereOp : Tiny_TernaryOp<"where", [
 
 def Tiny_MulAccOp : Tiny_TernaryOp<"mulacc", [
                                               InferTensorTypeAdaptor,
+                                              ElementwiseMappable,
                                               Pure
                                              ]> {
   let summary = "Computes a multiply-accumulate operation in the form of: (a * b) + c";

@@ -33,26 +33,11 @@ Elementwise Mappable Ops:
 
 */
 
-struct FuncOpInterface
-    : public BufferizableOpInterface::ExternalModel<FuncOpInterface,
-                                                    tiny::FuncOp> {
-  bool bufferizesToMemoryRead(Operation *op, OpOperand &opOperand,
-                              const AnalysisState &state) const {
-    return false;
-  }
-
-  bool bufferizesToMemoryWrite(Operation *op, OpOperand &opOperand,
-                               const AnalysisState &state) const {
-    return false;
-  }
-};
-
 } // namespace
 } // namespace mlir::tiny
 
 void tiny::registerBufferizableOpInterfaceExternalModels(
     DialectRegistry &registery) {
-  registery.addExtension(+[](MLIRContext *context, tiny::TinyDialect *dialect) {
-    tiny::FuncOp::attachInterface<FuncOpInterface>(*context);
-  });
+  registery.addExtension(
+      +[](MLIRContext *context, tiny::TinyDialect *dialect) {});
 }
