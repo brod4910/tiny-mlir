@@ -8,6 +8,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
+#include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
@@ -98,6 +99,11 @@ LogicalResult SliceOp::inferReturnTypes(
   return success();
 }
 
+/* ------------------ Shape Op ------------------- */
+void ShapeOp::build(OpBuilder &builder, OperationState &ods,
+                    llvm::ArrayRef<int64_t> shape, Type elementType) {
+  // possible to create shape from array ref?
+}
 /*
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------

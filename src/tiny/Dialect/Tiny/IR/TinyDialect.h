@@ -13,11 +13,15 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ---------------------- Traits ---------------------
 --------------------------------------------------- */
+bool verifyElementwise(Operation *op);
+bool hasElementwiseBroadcastableTrait(Operation *op);
+bool isElementwiseBroadcastableOpOnRankedTensors(Operation *op);
+
 template <typename ConcreteType>
 struct ElementwiseBroadcastable
     : public OpTrait::TraitBase<ConcreteType, ElementwiseBroadcastable> {
   static LogicalResult verifyTrait(Operation *op) {
-    auto isElementwise = OpTrait::impl::verifyElementwise(op);
+    auto isElementwise = verifyElementwise(op);
 
     auto operandTypes = op->getOperandTypes();
     SmallVector<SmallVector<int64_t, 6>> shapes;
@@ -29,7 +33,7 @@ struct ElementwiseBroadcastable
 
     auto isBroadcastable = OpTrait::util::staticallyKnownBroadcastable(shapes);
 
-    if (isElementwise.failed() && !isBroadcastable) {
+    if (!isElementwise && !isBroadcastable) {
       return op->emitOpError(
           "operands must be elementwise mappable and broadcastable.");
     }

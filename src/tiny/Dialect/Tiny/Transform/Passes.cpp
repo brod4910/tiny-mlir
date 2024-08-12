@@ -1,5 +1,10 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Traits.h"
+#include "mlir/IR/AffineExpr.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
@@ -22,6 +27,8 @@
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
+#include "llvm/ADT/SmallVectorExtras.h"
+#include "llvm/Support/Casting.h"
 #include <memory>
 
 namespace mlir {
@@ -37,16 +44,6 @@ using namespace mlir;
 using namespace bufferization;
 
 namespace {
-static bool isElementwiseMappableOpOnRankedTensors(Operation *op) {
-  if (!OpTrait::hasElementwiseMappableTraits(op))
-    return false;
-
-  // TODO: The conversion pattern can be made to work for `any_of` here, but
-  // it's more complex as it requires tracking which operands are scalars.
-  return llvm::all_of(op->getOperandTypes(),
-                      [](Type type) { return isa<RankedTensorType>(type); });
-}
-
 struct TinyBufferizePass
     : public tiny::impl::TinyBufferizePassBase<TinyBufferizePass> {
   using TinyBufferizePassBase::TinyBufferizePassBase;
@@ -69,6 +66,65 @@ struct TinyBufferizePass
   }
 };
 
+struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
+  ConvertAnyElementwiseBroadcastableOpToLinalg(MLIRContext *context)
+      : RewritePattern(MatchAnyOpTypeTag(), 1, context) {}
+
+  LogicalResult matchAndRewrite(Operation *op,
+                                PatternRewriter &rewriter) const final {
+    if (!tiny::isElementwiseBroadcastableOpOnRankedTensors(op)) {
+      return rewriter.notifyMatchFailure(
+          op, "requires elementwise broadcastable on ranked tensors.");
+    }
+
+    auto resultType = dyn_cast<RankedTensorType>(op->getResultTypes().front());
+    auto rank = resultType.getRank();
+    auto resultShape = rewriter.create<tiny::ShapeOp>(
+        op->getLoc(), resultType.getShape(), resultType.getElementType());
+
+    Value resultTensor =
+        rewriter.create<tiny::EmptyOp>(op->getLoc(), resultShape->getResult(0));
+
+    // Get AffineMaps for inputs, check for 1 in dim for broadcasting
+    auto affineMaps =
+        llvm::map_to_vector(op->getOperands(), [&](Value operand) {
+          auto shape = cast<ShapedType>(operand.getType()).getShape();
+          SmallVector<AffineExpr> affineExprs;
+          for (auto it : llvm::enumerate(shape)) {
+            auto expr = it.value() == 1 ? rewriter.getAffineConstantExpr(0)
+                                        : rewriter.getAffineDimExpr(it.index());
+            affineExprs.push_back(expr);
+          }
+          return AffineMap::get(rank, 0, affineExprs, rewriter.getContext());
+        });
+
+    SmallVector<utils::IteratorType, 6> iteratorTypes(
+        rank, utils::IteratorType::parallel);
+
+    // AffineMap for result
+    affineMaps.push_back(rewriter.getMultiDimIdentityMap(rank));
+    rewriter.replaceOpWithNewOp<linalg::GenericOp>(
+        op, /*resultTensorTypes=*/op->getResultTypes(),
+        /*inputs=*/op->getOperands(), /*outputs=*/resultTensor,
+        /*indexingMaps=*/affineMaps, /*iteratorTypes=*/iteratorTypes,
+        /*bodyBuilder=*/
+        [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
+          auto *scalarOp =
+              builder.create(loc, op->getName().getIdentifier(),
+                             regionArgs.take_back(op->getNumOperands()),
+                             resultType, op->getAttrs());
+          builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
+        });
+
+    return success();
+  }
+};
+
+void populateElementwiseBroadcastableToLinalg(RewritePatternSet &patterns) {
+  patterns.add<ConvertAnyElementwiseBroadcastableOpToLinalg>(
+      patterns.getContext());
+}
+
 struct TinyElementwiseToLinalgPass
     : public tiny::impl::TinyElementwiseToLinalgBase<
           TinyElementwiseToLinalgPass> {
@@ -82,9 +138,9 @@ struct TinyElementwiseToLinalgPass
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
 
-    linalg::populateElementwiseToLinalgConversionPatterns(patterns);
+    populateElementwiseBroadcastableToLinalg(patterns);
     target.markUnknownOpDynamicallyLegal([](Operation *op) {
-      return !isElementwiseMappableOpOnRankedTensors(op);
+      return !tiny::isElementwiseBroadcastableOpOnRankedTensors(op);
     });
 
     if (failed(applyPartialConversion(func, target, std::move(patterns)))) {

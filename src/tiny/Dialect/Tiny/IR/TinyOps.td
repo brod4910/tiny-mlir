@@ -61,6 +61,10 @@ def Tiny_ShapeOp : Tiny_Op<"shape", [NoMemoryEffect]> {
     let assemblyFormat = [{
       $shape `,` $elementType attr-dict `:` type($result)
     }];
+
+    let builders = [
+      OpBuilder<(ins "ArrayRef<int64_t>":$shape, "Type":$elementType)>
+    ];
 }
 
 /* 
@@ -406,7 +410,6 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
   let description = [{
     Initializes an empty tensor of the specific shape and type.
   }];
-
 
   let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
 }

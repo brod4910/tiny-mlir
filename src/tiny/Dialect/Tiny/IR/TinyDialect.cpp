@@ -9,6 +9,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/IR/Types.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/STLExtras.h"
@@ -48,6 +49,63 @@ void TinyDialect::initialize() {
 Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
                                             Type type, Location loc) {
   return ConstantOp::materialize(builder, value, type, loc);
+}
+
+/*
+---------------------------------------------------
+------------------- TINY TRAITS --------------------
+--------------------------------------------------- */
+
+bool verifyElementwise(Operation *op) {
+  auto isRankedTensorType = [](Type type) {
+    return llvm::isa<RankedTensorType>(type);
+  };
+
+  auto resultMappableTypes = llvm::to_vector<1>(
+      llvm::make_filter_range(op->getResultTypes(), isRankedTensorType));
+  auto operandMappableTypes = llvm::to_vector<2>(
+      llvm::make_filter_range(op->getOperandTypes(), isRankedTensorType));
+
+  // If the op only has scalar operand/result types, then we have nothing to
+  // check.
+  if (resultMappableTypes.empty() && operandMappableTypes.empty())
+    return true;
+
+  if (!resultMappableTypes.empty() && operandMappableTypes.empty())
+    return false;
+
+  assert(!operandMappableTypes.empty());
+
+  if (resultMappableTypes.empty())
+    return false;
+
+  if (resultMappableTypes.size() != op->getNumResults())
+    return false;
+
+  SmallVector<Type, 4> types = llvm::to_vector<2>(
+      llvm::concat<Type>(operandMappableTypes, resultMappableTypes));
+  TypeID expectedBaseTy = types.front().getTypeID();
+  if (!llvm::all_of(types,
+                    [&](Type t) { return t.getTypeID() == expectedBaseTy; }) ||
+      failed(verifyCompatibleShapes(types))) {
+    return false;
+  }
+
+  return true;
+}
+
+bool hasElementwiseBroadcastableTrait(Operation *op) {
+  return op->hasTrait<ElementwiseBroadcastable>();
+}
+
+bool isElementwiseBroadcastableOpOnRankedTensors(Operation *op) {
+  if (!hasElementwiseBroadcastableTrait(op))
+    return false;
+
+  // TODO: The conversion pattern can be made to work for `any_of` here, but
+  // it's more complex as it requires tracking which operands are scalars.
+  return llvm::all_of(op->getOperandTypes(),
+                      [](Type type) { return isa<RankedTensorType>(type); });
 }
 
 /*
