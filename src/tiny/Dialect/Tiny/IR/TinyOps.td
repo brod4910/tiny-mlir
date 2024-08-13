@@ -402,7 +402,7 @@ class Tiny_LoadOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, 
 
 // TODO: Pure?
 def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_ShapeType: $shape);
+  let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_ShapedType: $result);
 
   let summary = "Initializes an empty tensor.";
@@ -411,7 +411,7 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
     Initializes an empty tensor of the specific shape and type.
   }];
 
-  let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
 // TODO: Pure?
@@ -425,7 +425,7 @@ def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape]> {
     Initializes a new tensor by copying another.
   }];
 
-  let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value attr-dict `:` functional-type(operands, results)";
 }
 
 // TODO: Pure?
@@ -440,11 +440,11 @@ def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> 
     from a tiny.load or a tiny.view. Otherwise, use copy.
   }];
 
-  let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value attr-dict `:` functional-type(operands, results)";
 }
 
 def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_ShapedType: $value, Tiny_ShapeType:$shape);
+  let arguments = (ins Tiny_ShapedType: $value, Variadic<Index>: $shape);
   let results = (outs Tiny_ShapedType: $result);
 
   let summary = "Creates a view of a tensor.";
@@ -453,12 +453,12 @@ def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
     Initializes a new tensor which is a view of the operand.
   }];
 
-  let assemblyFormat = "$value `,` $shape attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value `[` $shape `]` attr-dict `:` type($value) `->` type($result)";
 }
 
 // TODO: Pure?
 def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
-  let arguments = (ins Tiny_ShapeType: $shape);
+  let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_FloatShapedType: $result);
 
   let summary = "Makes a random tensor.";
@@ -467,7 +467,7 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
     Initializes a new tensor with random values between 0-1.
   }];
 
-  let assemblyFormat = "$shape attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
 /* 

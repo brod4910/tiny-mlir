@@ -24,6 +24,9 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
+#include <functional>
+#include <numeric>
+#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
@@ -100,9 +103,16 @@ LogicalResult SliceOp::inferReturnTypes(
 }
 
 /* ------------------ Shape Op ------------------- */
-void ShapeOp::build(OpBuilder &builder, OperationState &ods,
+void ShapeOp::build(OpBuilder &builder, OperationState &result,
                     llvm::ArrayRef<int64_t> shape, Type elementType) {
   // possible to create shape from array ref?
+  auto shapeVec = llvm::to_vector(llvm::map_range(shape, [&](int64_t dim) {
+    return dyn_cast<Attribute>(builder.getI64IntegerAttr(dim));
+  }));
+
+  auto shapeAttr = builder.getArrayAttr(shapeVec);
+  auto tensorType = RankedTensorType::get(shape, elementType);
+  build(builder, result, tensorType, shapeAttr, elementType);
 }
 /*
 ---------------------------------------------------
@@ -408,20 +418,22 @@ LogicalResult ShrOp::inferReturnTypeComponents(
 --------------------------------------------------- */
 
 LogicalResult
-ViewShapeInference(RankedTensorType valueType, ShapeType shapeType,
+ViewShapeInference(RankedTensorType valueType, ValueRange shape,
                    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes,
                    Location loc, StringLiteral opName) {
   int64_t tensor_numel = valueType.getNumElements();
-  int64_t shape_numel = shapeType.getNumElements();
+  SmallVector<OpFoldResult> dimValues = llvm::to_vector(llvm::map_range(
+      shape, [&](Value value) -> OpFoldResult { return value; }));
+
+  int64_t shape_numel =
+      std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<int64_t>());
 
   if (tensor_numel != shape_numel) {
     return emitError(loc, "Tensor and Shape numel not equal: ")
            << tensor_numel << " != " << shape_numel;
   }
 
-  SmallVector<int64_t> resultShape{shapeType.getShape().begin(),
-                                   shapeType.getShape().end()};
-  inferredReturnShapes.emplace_back(resultShape, shapeType.getElementType());
+  inferredReturnShapes.emplace_back(dims, valueType.getElementType());
   return success();
 }
 
@@ -431,8 +443,11 @@ LogicalResult EmptyOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     EmptyOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  auto shape = dyn_cast<ShapeType>(adaptor.getShape().getType());
-  inferredReturnShapes.emplace_back(shape.getShape(), shape.getElementType());
+  auto dims =
+      llvm::to_vector(llvm::map_range(adaptor.getShape(), [&](Attribute attr) {
+        return dyn_cast<IntegerAttr>(attr).getSInt();
+      }));
+  inferredReturnShapes.emplace_back(dims, adaptor.getElementType());
   return success();
 }
 
@@ -443,9 +458,9 @@ LogicalResult ViewOp::inferReturnTypeComponents(
     ViewOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
-  auto shapeType = dyn_cast<ShapeType>(adaptor.getShape().getType());
-  return ViewShapeInference(valueType, shapeType, inferredReturnShapes,
-                            *location, getOperationName());
+  auto shape = adaptor.getShape();
+  return ViewShapeInference(valueType, shape, inferredReturnShapes, *location,
+                            getOperationName());
 }
 
 /*
