@@ -13,6 +13,7 @@ include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/MemorySlotInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/Interfaces/ViewLikeInterface.td"
 
 include "mlir/IR/BuiltinAttributes.td"
 include "mlir/IR/CommonTypeConstraints.td"
@@ -443,17 +444,35 @@ def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> 
   let assemblyFormat = "$value attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_ShapedType: $value, Variadic<Index>: $shape);
+def Tiny_ViewOp : Tiny_LoadOp<"view", [
+                                       DeclareOpInterfaceMethods<OpAsmOpInterface, ["getAsmResultNames"]>,
+                                       DeclareOpInterfaceMethods<ViewLikeOpInterface>,
+                                       AttrSizedOperandSegments,
+                                       OffsetSizeAndStrideOpInterface,
+                                       Pure,
+                                       InferTensorTypeAdaptor]> {
+  let arguments = (ins Tiny_ShapedType: $value, 
+                       Variadic<Index>:$offsets,
+                       Variadic<Index>:$sizes,
+                       Variadic<Index>:$strides,
+                       DenseI64ArrayAttr:$static_offsets,
+                       DenseI64ArrayAttr:$static_sizes,
+                       DenseI64ArrayAttr:$static_strides);
+
   let results = (outs Tiny_ShapedType: $result);
 
   let summary = "Creates a view of a tensor.";
 
   let description = [{
-    Initializes a new tensor which is a view of the operand.
+    Initializes a new tensor which is a view of the value operand.
   }];
 
-  let assemblyFormat = "$value `[` $shape `]` attr-dict `:` type($value) `->` type($result)";
+  let assemblyFormat = 
+      "$value"
+      "custom<DynamicIndexList>($offsets, $static_offsets)"
+      "custom<DynamicIndexList>($sizes, $static_sizes)"
+      "custom<DynamicIndexList>($strides, $static_strides)"
+      " attr-dict `:` type($value) `->` type($result)";
 }
 
 // TODO: Pure?

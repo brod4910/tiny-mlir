@@ -1,4 +1,5 @@
 #include "mlir/Dialect/Traits.h"
+#include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -17,6 +18,7 @@
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
+#include "mlir/Interfaces/ViewLikeInterface.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -417,26 +419,6 @@ LogicalResult ShrOp::inferReturnTypeComponents(
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
 
-LogicalResult
-ViewShapeInference(RankedTensorType valueType, ValueRange shape,
-                   SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes,
-                   Location loc, StringLiteral opName) {
-  int64_t tensor_numel = valueType.getNumElements();
-  SmallVector<OpFoldResult> dimValues = llvm::to_vector(llvm::map_range(
-      shape, [&](Value value) -> OpFoldResult { return value; }));
-
-  int64_t shape_numel =
-      std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<int64_t>());
-
-  if (tensor_numel != shape_numel) {
-    return emitError(loc, "Tensor and Shape numel not equal: ")
-           << tensor_numel << " != " << shape_numel;
-  }
-
-  inferredReturnShapes.emplace_back(dims, valueType.getElementType());
-  return success();
-}
-
 /* ------------------ Empty Op -------------------- */
 
 LogicalResult EmptyOp::inferReturnTypeComponents(
@@ -453,15 +435,43 @@ LogicalResult EmptyOp::inferReturnTypeComponents(
 
 /* ------------------- View Op -------------------- */
 
+LogicalResult
+ViewShapeInference(RankedTensorType valueType, ArrayRef<int64_t> shape,
+                   SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes,
+                   Location loc, StringLiteral opName) {
+  int64_t tensorNumel = valueType.getNumElements();
+
+  // SmallVector<OpFoldResult> ofrs = llvm::to_vector(llvm::map_range(
+  //     shape, [&](Value value) -> OpFoldResult { return value; }));
+
+  // auto shape = llvm::to_vector(llvm::map_range(ofrs, [](OpFoldResult ofr) {
+  //   return dyn_cast<IntegerAttr>(ofr.get<Attribute>()).getSInt();
+  // }));
+
+  int64_t shapeNumel = std::accumulate(shape.begin(), shape.end(), 1,
+                                       std::multiplies<int64_t>());
+
+  if (tensorNumel != shapeNumel) {
+    return emitError(loc, "Tensor and Shape numel not equal: ")
+           << tensorNumel << " != " << shapeNumel;
+  }
+
+  inferredReturnShapes.emplace_back(shape, valueType.getElementType());
+  return success();
+}
+
 LogicalResult ViewOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ViewOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
   auto shape = adaptor.getShape();
+
   return ViewShapeInference(valueType, shape, inferredReturnShapes, *location,
                             getOperationName());
 }
+
+// Value ViewOp::getViewSource() { return getValue(); }
 
 /*
 ---------------------------------------------------
