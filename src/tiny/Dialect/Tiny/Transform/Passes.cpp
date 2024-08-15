@@ -101,6 +101,8 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
 
     // AffineMap for result
     affineMaps.push_back(rewriter.getMultiDimIdentityMap(rank));
+
+    // Transform tensor operation to scalar operation here
     rewriter.replaceOpWithNewOp<linalg::GenericOp>(
         op, /*resultTensorTypes=*/op->getResultTypes(),
         /*inputs=*/op->getOperands(), /*outputs=*/resultTensor,
@@ -110,7 +112,7 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
           auto *scalarOp =
               builder.create(loc, op->getName().getIdentifier(),
                              regionArgs.take_back(op->getNumOperands()),
-                             resultType, op->getAttrs());
+                             {resultType.getElementType()}, op->getAttrs());
           builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
         });
 
