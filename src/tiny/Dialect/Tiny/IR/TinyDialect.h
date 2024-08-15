@@ -25,6 +25,8 @@ bool verifyElementwise(Operation *op);
 bool hasElementwiseBroadcastableTrait(Operation *op);
 bool isElementwiseBroadcastableOpOnRankedTensors(Operation *op);
 
+bool isElementwiseOpOnRankedTensors(Operation *op);
+
 template <typename ConcreteType>
 struct ElementwiseBroadcastable
     : public OpTrait::TraitBase<ConcreteType, ElementwiseBroadcastable> {

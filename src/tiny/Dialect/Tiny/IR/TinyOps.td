@@ -35,6 +35,13 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 -------------------- Traits -----------------------
 --------------------------------------------------- */
 
+/* 
+ Op can be assumed to be an elementwise op with the option to 
+ broadcast when the op isn't initially elementwise mappable.
+ example:
+  %0 = tiny.mul %a, %b : (tensor<10x1x784>, tensor<10x10x1>) -> tensor<10x10x784>
+  
+*/
 def ElementwiseBroadcastable : NativeOpTrait<"ElementwiseBroadcastable"> {
   let cppNamespace = "mlir::tiny";
 }
@@ -236,9 +243,8 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_AddOp : Tiny_BinaryOp<"add", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
-                                       ElementwiseMappable,
-                                       Pure,
-                                       ResultsBroadcastableShape, 
+                                       ElementwiseBroadcastable,
+                                       Pure, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Add two tensors";
@@ -250,9 +256,8 @@ def Tiny_AddOp : Tiny_BinaryOp<"add", [
 
 def Tiny_SubOp : Tiny_BinaryOp<"sub", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       ElementwiseMappable,
-                                       Pure,
-                                       ResultsBroadcastableShape, 
+                                       ElementwiseBroadcastable,
+                                       Pure, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Subtract two tensors";
@@ -267,7 +272,6 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
                                        Commutative,
                                        Pure,
                                        ElementwiseBroadcastable,
-                                       ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Multiply two tensors";
@@ -279,9 +283,8 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
 
 def Tiny_DivOp : Tiny_BinaryOp<"div", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                       ElementwiseMappable, 
-                                       Pure,
-                                       ResultsBroadcastableShape, 
+                                       ElementwiseBroadcastable,
+                                       Pure, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Divide two tensors";
@@ -293,10 +296,8 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
 
 def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                           Commutative,
-                                           ElementwiseMappable,
-                                           Pure,
-                                           ResultsBroadcastableShape, 
+                                           Commutative,ElementwiseBroadcastable,
+                                           Pure, 
                                            SameOperandsAndResultElementType
                                           ]> {
   let summary = "Compares whether the values in the tensor are equal";
@@ -307,10 +308,8 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
 }
 
 def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
-                                           DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                           ElementwiseMappable,
-                                           Pure,
-                                           ResultsBroadcastableShape, 
+                                           DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,ElementwiseBroadcastable,
+                                           Pure, 
                                            SameOperandsAndResultElementType
                                           ]> {
   let summary = "Compares whether the values in the tensor are less-than";
@@ -323,9 +322,8 @@ def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
 def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
                                                DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                                Commutative,
-                                               ElementwiseMappable,
-                                               Pure, 
-                                               ResultsBroadcastableShape, 
+                                               ElementwiseBroadcastable,
+                                               Pure,  
                                                SameOperandsAndResultElementType
                                               ]> {
   let summary = "Take the max of the two tensors";
@@ -337,9 +335,8 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 
 def Tiny_ModOp : Tiny_BinaryOp<"mod", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        ElementwiseMappable,
-                                        Pure,
-                                        ResultsBroadcastableShape, 
+                                        ElementwiseBroadcastable,
+                                        Pure, 
                                         SameOperandsAndResultElementType
                                       ]> {
   let summary = "Take the mod of the two tensors";
@@ -352,9 +349,8 @@ def Tiny_ModOp : Tiny_BinaryOp<"mod", [
 def Tiny_XOROp : Tiny_BinaryOp<"xor", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         Commutative,
-                                        ElementwiseMappable,
-                                        Pure, 
-                                        ResultsBroadcastableShape, 
+                                        ElementwiseBroadcastable,
+                                        Pure,  
                                         SameOperandsAndResultElementType
                                       ]> {
   let summary = "Take the xor of the two tensors";
@@ -366,7 +362,7 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
 
 def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        ElementwiseMappable,
+                                        ElementwiseBroadcastable,
                                         Pure
                                       ]> {
   let arguments = (ins Tiny_ShapedType: $lhs, IndexAttr: $rhs);
@@ -381,7 +377,7 @@ def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
 
 def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        ElementwiseMappable,
+                                        ElementwiseBroadcastable,
                                         Pure
                                       ]> {
   let arguments = (ins Tiny_ShapedType: $lhs, IndexAttr: $rhs);

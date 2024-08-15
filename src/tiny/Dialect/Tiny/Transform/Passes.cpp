@@ -1,5 +1,6 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Linalg/Utils/Utils.h"
 #include "mlir/Dialect/Traits.h"
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineMap.h"
@@ -139,8 +140,10 @@ struct TinyElementwiseToLinalgPass
     ConversionTarget target(*context);
 
     populateElementwiseBroadcastableToLinalg(patterns);
+    linalg::populateElementwiseToLinalgConversionPatterns(patterns);
     target.markUnknownOpDynamicallyLegal([](Operation *op) {
-      return !tiny::isElementwiseBroadcastableOpOnRankedTensors(op);
+      return !tiny::isElementwiseBroadcastableOpOnRankedTensors(op) &&
+             !tiny::isElementwiseOpOnRankedTensors(op);
     });
 
     if (failed(applyPartialConversion(func, target, std::move(patterns)))) {

@@ -48,10 +48,8 @@ public:
     ModuleOp mod = getOperation();
 
     LowerToLLVMOptions options(context);
-    options.overrideIndexBitwidth(32);
 
     LLVMTypeConverter typeConverter(context, options);
-    // TinyLLVMConversionTarget target(*context);
     LLVMConversionTarget target(getContext());
 
     RewritePatternSet patterns(context);

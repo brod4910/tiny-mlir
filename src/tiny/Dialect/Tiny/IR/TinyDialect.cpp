@@ -102,8 +102,14 @@ bool isElementwiseBroadcastableOpOnRankedTensors(Operation *op) {
   if (!hasElementwiseBroadcastableTrait(op))
     return false;
 
-  // TODO: The conversion pattern can be made to work for `any_of` here, but
-  // it's more complex as it requires tracking which operands are scalars.
+  return llvm::all_of(op->getOperandTypes(),
+                      [](Type type) { return isa<RankedTensorType>(type); });
+}
+
+bool isElementwiseOpOnRankedTensors(Operation *op) {
+  if (!OpTrait::hasElementwiseMappableTraits(op))
+    return false;
+
   return llvm::all_of(op->getOperandTypes(),
                       [](Type type) { return isa<RankedTensorType>(type); });
 }
