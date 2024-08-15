@@ -1,13 +1,17 @@
 #pragma once
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Traits.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/Support/Casting.h"
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h.inc"
+
+#include <iostream>
 
 namespace mlir::tiny {
 /*
@@ -24,12 +28,12 @@ struct ElementwiseBroadcastable
   static LogicalResult verifyTrait(Operation *op) {
     auto isElementwise = verifyElementwise(op);
 
-    auto operandTypes = op->getOperandTypes();
     SmallVector<SmallVector<int64_t, 6>> shapes;
 
-    for (auto type : operandTypes) {
-      auto tensorType = dyn_cast<RankedTensorType>(type);
-      shapes.emplace_back(tensorType.getShape());
+    for (auto type : op->getOperandTypes()) {
+      // assert(llvm::isa<TensorType>(type) && "not a tensor type");
+      auto shapedType = cast<ShapedType>(type);
+      shapes.emplace_back(shapedType.getShape());
     }
 
     auto isBroadcastable = OpTrait::util::staticallyKnownBroadcastable(shapes);

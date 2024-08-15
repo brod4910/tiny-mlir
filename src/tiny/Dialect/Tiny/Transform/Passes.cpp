@@ -79,11 +79,9 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
 
     auto resultType = dyn_cast<RankedTensorType>(op->getResultTypes().front());
     auto rank = resultType.getRank();
-    auto resultShape = rewriter.create<tiny::ShapeOp>(
-        op->getLoc(), resultType.getShape(), resultType.getElementType());
 
-    Value resultTensor =
-        rewriter.create<tiny::EmptyOp>(op->getLoc(), resultShape->getResult(0));
+    Value resultTensor = rewriter.create<tiny::EmptyOp>(
+        op->getLoc(), resultType.getShape(), resultType.getElementType());
 
     // Get AffineMaps for inputs, check for 1 in dim for broadcasting
     auto affineMaps =

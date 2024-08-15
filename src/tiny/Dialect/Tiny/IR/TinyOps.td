@@ -403,7 +403,7 @@ class Tiny_LoadOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, 
 
 // TODO: Pure?
 def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
-  let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
+  let arguments = (ins DenseI64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_ShapedType: $result);
 
   let summary = "Initializes an empty tensor.";
@@ -412,7 +412,7 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
     Initializes an empty tensor of the specific shape and type.
   }];
 
-  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$shape `,` $elementType attr-dict `:` functional-type(operands, results)";
 }
 
 // TODO: Pure?
@@ -447,18 +447,9 @@ def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> 
 def Tiny_ViewOp : Tiny_LoadOp<"view", [
                                        DeclareOpInterfaceMethods<OpAsmOpInterface, ["getAsmResultNames"]>,
                                        DeclareOpInterfaceMethods<ViewLikeOpInterface>,
-                                       AttrSizedOperandSegments,
-                                       OffsetSizeAndStrideOpInterface,
                                        Pure,
                                        InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_ShapedType: $value, 
-                       Variadic<Index>:$offsets,
-                       Variadic<Index>:$sizes,
-                       Variadic<Index>:$strides,
-                       DenseI64ArrayAttr:$static_offsets,
-                       DenseI64ArrayAttr:$static_sizes,
-                       DenseI64ArrayAttr:$static_strides);
-
+  let arguments = (ins Tiny_ShapedType: $value, DenseI64ArrayAttr: $shape);
   let results = (outs Tiny_ShapedType: $result);
 
   let summary = "Creates a view of a tensor.";
@@ -468,11 +459,7 @@ def Tiny_ViewOp : Tiny_LoadOp<"view", [
   }];
 
   let assemblyFormat = 
-      "$value"
-      "custom<DynamicIndexList>($offsets, $static_offsets)"
-      "custom<DynamicIndexList>($sizes, $static_sizes)"
-      "custom<DynamicIndexList>($strides, $static_strides)"
-      " attr-dict `:` type($value) `->` type($result)";
+      "$value $shape attr-dict `:` type($value) `->` type($result)";
 }
 
 // TODO: Pure?
@@ -498,8 +485,6 @@ class Tiny_BufferOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 
 def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
                                          /* MemRefsNormalizable,*/
-                                         /*DeclareOpInterfaceMethods<PromotableMemOpInterface>,
-                                           DeclareOpInterfaceMethods<DestructurableAccessorOpInterface>*/
                                          ]> {
   let arguments = (ins Arg<Tiny_ShapedType, "source to load from",
                            [MemRead]>: $value,
@@ -516,9 +501,7 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
   // let hasFolder = 1;
 }
 
-def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments,
-                                           /*DeclareOpInterfaceMethods<PromotableMemOpInterface>,
-                                           DeclareOpInterfaceMethods<DestructurableAccessorOpInterface>*/]> {
+def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
   let arguments = (ins  Tiny_ShapedType:$src,
                         Variadic<Tiny_SliceType>:$src_slice,
                         Arg<Tiny_ShapedType, "target reference to store to", 
