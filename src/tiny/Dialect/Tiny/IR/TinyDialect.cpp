@@ -56,6 +56,8 @@ Operation *TinyDialect::materializeConstant(OpBuilder &builder, Attribute value,
 ------------------- TINY TRAITS --------------------
 --------------------------------------------------- */
 
+/* -------- ElementwiseBroadcastable Trait -------- */
+
 bool verifyElementwise(Operation *op) {
   auto isRankedTensorType = [](Type type) {
     return llvm::isa<RankedTensorType>(type);
@@ -108,6 +110,18 @@ bool isElementwiseBroadcastableOpOnRankedTensors(Operation *op) {
 
 bool isElementwiseOpOnRankedTensors(Operation *op) {
   if (!OpTrait::hasElementwiseMappableTraits(op))
+    return false;
+
+  return llvm::all_of(op->getOperandTypes(),
+                      [](Type type) { return isa<RankedTensorType>(type); });
+}
+
+/* ---------------- Reducer Trait ----------------- */
+
+bool hasReducerTrait(Operation *op) { return op->hasTrait<Reducer>(); }
+
+bool isReducerOpOnRankedTensors(Operation *op) {
+  if (!hasReducerTrait(op))
     return false;
 
   return llvm::all_of(op->getOperandTypes(),

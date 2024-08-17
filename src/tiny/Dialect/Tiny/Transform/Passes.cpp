@@ -2,6 +2,7 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Utils/Utils.h"
 #include "mlir/Dialect/Traits.h"
+#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
@@ -10,10 +11,12 @@
 #include "mlir/IR/BuiltinTypeInterfaces.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/IR/Visitors.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
@@ -34,6 +37,7 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/SmallVectorExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
@@ -91,7 +95,7 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
     Value resultTensor = rewriter.create<tiny::EmptyOp>(
         op->getLoc(), resultType.getShape(), resultType.getElementType());
 
-    // Get AffineMaps for inputs, check for 1 in dim for broadcasting
+    // Get AffineMaps for inputs, check for 1 in dim fol  r broadcasting
     auto affineMaps =
         llvm::map_to_vector(op->getOperands(), [&](Value operand) {
           auto shape = cast<ShapedType>(operand.getType()).getShape();
@@ -164,16 +168,36 @@ struct ConvertAnyReduceOpToLinalg : public RewritePattern {
 
     auto initialValue =
         selectInitialValue(op, resultType.getElementType(), rewriter);
+
     if (!initialValue)
       return rewriter.notifyMatchFailure(
-          op, "initial value does not exisit for reduction op.");
+          op, "initial value does not exist for reduction op.");
+
+    SmallVector<AffineMap, 2> affineMaps;
+    affineMaps.push_back(rewriter.getMultiDimIdentityMap(valueType.getRank()));
+    affineMaps.push_back(rewriter.getMultiDimIdentityMap(resultType.getRank()));
+
+    SmallVector<utils::IteratorType, 2> iteratorTypes = {
+        utils::IteratorType::parallel, utils::IteratorType::reduction};
+
+    rewriter.replaceOpWithNewOp<linalg::GenericOp>(
+        op, op->getResultTypes(), op->getOperands(), op->getResults(),
+        affineMaps, iteratorTypes,
+        [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
+          auto *scalarOp = builder.create(
+              loc, op->getName().getIdentifier(), regionArgs.take_back(1),
+              {resultType.getElementType()}, op->getAttrs());
+          auto *addOp = builder.create<tiny::AddOp>(loc, );
+          builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
+        });
+
     return success();
   }
 };
 
 void populateElementwiseBroadcastableToLinalg(RewritePatternSet &patterns) {
-  patterns.add<ConvertAnyElementwiseBroadcastableOpToLinalg>(
-      patterns.getContext());
+  patterns.add<ConvertAnyElementwiseBroadcastableOpToLinalg,
+               ConvertAnyReduceOpToLinalg>(patterns.getContext());
 }
 
 struct TinyElementwiseToLinalgPass
@@ -193,7 +217,8 @@ struct TinyElementwiseToLinalgPass
     linalg::populateElementwiseToLinalgConversionPatterns(patterns);
     target.markUnknownOpDynamicallyLegal([](Operation *op) {
       return !tiny::isElementwiseBroadcastableOpOnRankedTensors(op) &&
-             !tiny::isElementwiseOpOnRankedTensors(op);
+             !tiny::isElementwiseOpOnRankedTensors(op) &&
+             !tiny::isReducerOpOnRankedTensors(op);
     });
 
     if (failed(applyPartialConversion(func, target, std::move(patterns)))) {

@@ -4,6 +4,8 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Visitors.h"
 #include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
 #include "llvm/ADT/STLExtras.h"
@@ -21,6 +23,9 @@ namespace mlir::tiny {
 ---------------------------------------------------
 ---------------------- Traits ---------------------
 --------------------------------------------------- */
+
+/* -------- ElementwiseBroadcastable Trait -------- */
+
 bool verifyElementwise(Operation *op);
 bool hasElementwiseBroadcastableTrait(Operation *op);
 bool isElementwiseBroadcastableOpOnRankedTensors(Operation *op);
@@ -64,6 +69,33 @@ struct ElementwiseBroadcastable
     return success();
   }
 };
+
+/* ---------------- Reducer Trait ----------------- */
+
+bool hasReducerTrait(Operation *op);
+
+bool isReducerOpOnRankedTensors(Operation *op);
+
+template <typename ConcreteType>
+struct Reducer : public OpTrait::TraitBase<ConcreteType, Reducer> {
+  static LogicalResult verifyTrait(Operation *op) {
+    auto isMappableType = [](Type type) {
+      return llvm::isa<RankedTensorType>(type);
+    };
+
+    if (!isMappableType(op->getOperand(0).getType()) &&
+        !isMappableType(op->getResult(0).getType())) {
+      return success();
+    }
+
+    if (op->getNumOperands() != 1 || op->getNumResults() != 1) {
+      return op->emitOpError("reducer requires 1 operand and 1 result.");
+    }
+
+    return success();
+  }
+};
+
 } // namespace mlir::tiny
 
 #define GET_TYPEDEF_CLASSES

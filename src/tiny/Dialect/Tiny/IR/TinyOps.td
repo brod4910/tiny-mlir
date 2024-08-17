@@ -40,9 +40,13 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
  broadcast when the op isn't initially elementwise mappable.
  example:
   %0 = tiny.mul %a, %b : (tensor<10x1x784>, tensor<10x10x1>) -> tensor<10x10x784>
-  
+
 */
 def ElementwiseBroadcastable : NativeOpTrait<"ElementwiseBroadcastable"> {
+  let cppNamespace = "mlir::tiny";
+}
+
+def Reducer : NativeOpTrait<"Reducer"> {
   let cppNamespace = "mlir::tiny";
 }
 
@@ -194,9 +198,9 @@ def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperand
 --------------------------------------------------- */
 
 class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_ShapedType: $value, 
+  let arguments = (ins Tiny_ValidType: $value, 
                    DefaultValuedAttr<I32Attr, "0">: $axis);
-  let results = (outs Tiny_ShapedType: $result);
+  let results = (outs Tiny_ValidType: $result);
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
@@ -204,6 +208,7 @@ class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_MaxOp : Tiny_ReduceOp<"max", [
                                        InferTensorTypeAdaptor,
                                        Pure,
+                                       Reducer
                                       ]> {
   let summary = "Max value along the axis.";
 
@@ -215,6 +220,7 @@ def Tiny_MaxOp : Tiny_ReduceOp<"max", [
 def Tiny_SumOp : Tiny_ReduceOp<"sum", [
                                        InferTensorTypeAdaptor,
                                        Pure,
+                                       Reducer
                                       ]> {
   let summary = "Sum along the axis.";
 
