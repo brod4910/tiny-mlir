@@ -5,11 +5,16 @@
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributeInterfaces.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinTypeInterfaces.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Visitors.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 #include "tiny/Dialect/Tiny/Transform/BufferizableOpInterfaceImpl.h"
@@ -28,7 +33,9 @@
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/ADT/SmallVectorExtras.h"
+#include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
 #include <memory>
 
@@ -117,6 +124,49 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
           builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
         });
 
+    return success();
+  }
+};
+
+TypedAttr selectInitialValue(Operation *op, Type elementType,
+                             PatternRewriter &rewriter) {
+  if (dyn_cast<tiny::SumOp>(op) && isa<IntegerType>(elementType))
+    return rewriter.getIntegerAttr(elementType, 0);
+
+  if (dyn_cast<tiny::SumOp>(op) && isa<FloatType>(elementType))
+    return rewriter.getFloatAttr(elementType, 0.0);
+
+  if (dyn_cast<tiny::MaximumOp>(op) && isa<IntegerType>(elementType))
+    return rewriter.getIntegerAttr(
+        elementType,
+        APInt::getSignedMaxValue(elementType.getIntOrFloatBitWidth()));
+
+  if (dyn_cast<tiny::MaximumOp>(op) && isa<FloatType>(elementType))
+    return rewriter.getFloatAttr(
+        elementType,
+        APFloat::getLargest(cast<FloatType>(elementType).getFloatSemantics(),
+                            true));
+
+  return {};
+}
+
+struct ConvertAnyReduceOpToLinalg : public RewritePattern {
+  ConvertAnyReduceOpToLinalg(MLIRContext *context)
+      : RewritePattern(MatchAnyOpTypeTag(), 1, context) {}
+
+  LogicalResult matchAndRewrite(Operation *op,
+                                PatternRewriter &rewriter) const final {
+    auto valueType = cast<ShapedType>(op->getOperand(0).getType());
+    auto resultType = cast<ShapedType>(op->getResult(0).getType());
+
+    Value resultTensor = rewriter.create<tiny::EmptyOp>(
+        op->getLoc(), resultType.getShape(), resultType.getElementType());
+
+    auto initialValue =
+        selectInitialValue(op, resultType.getElementType(), rewriter);
+    if (!initialValue)
+      return rewriter.notifyMatchFailure(
+          op, "initial value does not exisit for reduction op.");
     return success();
   }
 };
