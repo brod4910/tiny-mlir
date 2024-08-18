@@ -16,6 +16,7 @@
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
 #include "mlir/IR/Visitors.h"
 #include "tiny/Dialect/Accelerator/IR/AcclDialect.h"
@@ -37,10 +38,13 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/SmallVectorExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Casting.h"
+#include <_types/_uint64_t.h>
 #include <memory>
 
 namespace mlir {
@@ -95,7 +99,7 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
     Value resultTensor = rewriter.create<tiny::EmptyOp>(
         op->getLoc(), resultType.getShape(), resultType.getElementType());
 
-    // Get AffineMaps for inputs, check for 1 in dim fol  r broadcasting
+    // Get AffineMaps for inputs, check for 1 in dim for broadcasting
     auto affineMaps =
         llvm::map_to_vector(op->getOperands(), [&](Value operand) {
           auto shape = cast<ShapedType>(operand.getType()).getShape();
@@ -111,7 +115,7 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
     SmallVector<utils::IteratorType, 6> iteratorTypes(
         rank, utils::IteratorType::parallel);
 
-    // AffineMap for result
+    // AffineMap for
     affineMaps.push_back(rewriter.getMultiDimIdentityMap(rank));
 
     // Transform tensor operation to scalar operation here
@@ -154,14 +158,20 @@ TypedAttr selectInitialValue(Operation *op, Type elementType,
   return {};
 }
 
-struct ConvertAnyReduceOpToLinalg : public RewritePattern {
-  ConvertAnyReduceOpToLinalg(MLIRContext *context)
-      : RewritePattern(MatchAnyOpTypeTag(), 1, context) {}
+template <typename SourceOp>
+struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
+  using OpRewritePattern<SourceOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(Operation *op,
+  LogicalResult matchAndRewrite(SourceOp op,
                                 PatternRewriter &rewriter) const final {
     auto valueType = cast<ShapedType>(op->getOperand(0).getType());
     auto resultType = cast<ShapedType>(op->getResult(0).getType());
+
+    auto axis = op.getAxis();
+
+    // TODO: make this a function on the Op
+    // Get real axis. Rank + (-axis) = real axis
+    axis = axis >= 0 ? axis : valueType.getRank() + axis;
 
     Value resultTensor = rewriter.create<tiny::EmptyOp>(
         op->getLoc(), resultType.getShape(), resultType.getElementType());
@@ -173,22 +183,29 @@ struct ConvertAnyReduceOpToLinalg : public RewritePattern {
       return rewriter.notifyMatchFailure(
           op, "initial value does not exist for reduction op.");
 
-    SmallVector<AffineMap, 2> affineMaps;
-    affineMaps.push_back(rewriter.getMultiDimIdentityMap(valueType.getRank()));
-    affineMaps.push_back(rewriter.getMultiDimIdentityMap(resultType.getRank()));
+    SmallVector<AffineExpr> resultExpr;
+    SmallVector<utils::IteratorType> iteratorTypes;
 
-    SmallVector<utils::IteratorType, 2> iteratorTypes = {
-        utils::IteratorType::parallel, utils::IteratorType::reduction};
+    for (int d = 0; d < valueType.getRank(); ++d) {
+      if (d == axis) {
+        iteratorTypes.push_back(utils::IteratorType::reduction);
+      } else {
+        iteratorTypes.push_back(utils::IteratorType::parallel);
+        resultExpr.push_back(rewriter.getAffineDimExpr(d));
+      }
+    }
+
+    SmallVector<AffineMap, 2> affineMaps = {
+        rewriter.getMultiDimIdentityMap(valueType.getRank()),
+        AffineMap::get(valueType.getRank(), 0, resultExpr, op.getContext())};
 
     rewriter.replaceOpWithNewOp<linalg::GenericOp>(
-        op, op->getResultTypes(), op->getOperands(), op->getResults(),
-        affineMaps, iteratorTypes,
+        op, op->getResultTypes(), op->getOperand(0), resultTensor, affineMaps,
+        iteratorTypes,
         [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
-          auto *scalarOp = builder.create(
-              loc, op->getName().getIdentifier(), regionArgs.take_back(1),
-              {resultType.getElementType()}, op->getAttrs());
-          auto *addOp = builder.create<tiny::AddOp>(loc, );
-          builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
+          Value scalarOp = rewriter.create<tiny::AddOp>(
+              loc, resultType.getElementType(), regionArgs[0], regionArgs[1]);
+          builder.create<linalg::YieldOp>(loc, scalarOp);
         });
 
     return success();
@@ -197,7 +214,8 @@ struct ConvertAnyReduceOpToLinalg : public RewritePattern {
 
 void populateElementwiseBroadcastableToLinalg(RewritePatternSet &patterns) {
   patterns.add<ConvertAnyElementwiseBroadcastableOpToLinalg,
-               ConvertAnyReduceOpToLinalg>(patterns.getContext());
+               ConvertReduceOpToLinalg<tiny::SumOp>,
+               ConvertReduceOpToLinalg<tiny::MaxOp>>(patterns.getContext());
 }
 
 struct TinyElementwiseToLinalgPass

@@ -199,7 +199,7 @@ def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperand
 
 class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
   let arguments = (ins Tiny_ValidType: $value, 
-                   DefaultValuedAttr<I32Attr, "0">: $axis);
+                   DefaultValuedAttr<SI32Attr, "0">: $axis);
   let results = (outs Tiny_ValidType: $result);
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
@@ -234,9 +234,6 @@ def Tiny_SumOp : Tiny_ReduceOp<"sum", [
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
 
-// TODO: Explore elementwise mappable trait for broadcasted
-// tensors
-//
 // TODO: Add folders using CommonFolders
 
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
