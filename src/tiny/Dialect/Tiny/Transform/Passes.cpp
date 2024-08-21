@@ -183,6 +183,17 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
       return rewriter.notifyMatchFailure(
           op, "initial value does not exist for reduction op.");
 
+    // TODO: Specific to Tiny. Requires everything to be tensors even 0-D
+    auto constantTensor = rewriter.create<tiny::ConstantOp>(
+        op->getLoc(),
+        DenseElementsAttr::get(
+            RankedTensorType::get({}, resultType.getElementType()),
+            initialValue));
+
+    auto filledTensor = rewriter.create<tiny::FillOp>(
+        op->getLoc(), constantTensor, resultType.getShape(),
+        resultType.getElementType());
+
     SmallVector<AffineExpr> resultExpr;
     SmallVector<utils::IteratorType> iteratorTypes;
 

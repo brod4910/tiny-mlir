@@ -477,13 +477,13 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
 
 // TODO: Pure?
 def Tiny_FillOp : Tiny_LoadOp<"fill", [SameOperandsAndResultShape]> {
-  let arguments = (ins Tiny_FloatAttr:$value, I64ArrayAttr: $shape, TypeAttr:$elementType);
+  let arguments = (ins Tiny_0DTensor:$value, I64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
-  let summary = "Makes a random tensor.";
+  let summary = "Fills a tensor with value.";
 
   let description = [{
-    Initializes a new tensor with random values between 0-1.
+    Initializes a new tensor with fill value.
   }];
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";

@@ -5,6 +5,7 @@ include "tiny/Dialect/Tiny/IR/TinyDialect.td"
 
 include "mlir/IR/AttrTypeBase.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
+include "mlir/IR/CommonTypeConstraints.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
 include "mlir/IR/OpBase.td"
 
@@ -19,9 +20,7 @@ def Tiny_Int : AnyTypeOf<[I1, I8, I16, I32, I64]>;
 
 def Tiny_ElementType : AnyTypeOf<[Tiny_Float, Tiny_Int]>;
 
-def Tiny_FloatAttr : AnyTypeOf<[F32, F64]>;
-
-def Tiny_IntAttr : AnyTypeOf<[BF16, F16, F32, F64]>;
+def Tiny_0DTensor : 0DTensorOf<[Tiny_ElementType]>;
 
 def Tiny_Tensor : RankedTensorOf<[Tiny_ElementType]>;
 def Tiny_FloatTensor : RankedTensorOf<[Tiny_Float]>;
