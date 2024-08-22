@@ -15,6 +15,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeRange.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
@@ -176,6 +177,7 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
     Value resultTensor = rewriter.create<tiny::EmptyOp>(
         op->getLoc(), resultType.getShape(), resultType.getElementType());
 
+    // TODO: Remove this somehow, since we don't need an attr here
     auto initialValue =
         selectInitialValue(op, resultType.getElementType(), rewriter);
 
@@ -183,16 +185,20 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
       return rewriter.notifyMatchFailure(
           op, "initial value does not exist for reduction op.");
 
-    // TODO: Specific to Tiny. Requires everything to be tensors even 0-D
+    // TODO: Specific to Tiny. Requires everything to be tensors even 1-D
     auto constantTensor = rewriter.create<tiny::ConstantOp>(
         op->getLoc(),
         DenseElementsAttr::get(
-            RankedTensorType::get({}, resultType.getElementType()),
+            RankedTensorType::get({1}, resultType.getElementType()),
             initialValue));
 
-    auto filledTensor = rewriter.create<tiny::FillOp>(
-        op->getLoc(), constantTensor, resultType.getShape(),
-        resultType.getElementType());
+    auto filledTensor =
+        rewriter
+            .create<tiny::FillOp>(op->getLoc(), resultType.getElementType(),
+                                  resultTensor, constantTensor)
+            .getOperation()
+            ->getResults()
+            .front();
 
     SmallVector<AffineExpr> resultExpr;
     SmallVector<utils::IteratorType> iteratorTypes;
@@ -211,7 +217,7 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
         AffineMap::get(valueType.getRank(), 0, resultExpr, op.getContext())};
 
     rewriter.replaceOpWithNewOp<linalg::GenericOp>(
-        op, op->getResultTypes(), op->getOperand(0), resultTensor, affineMaps,
+        op, op->getResultTypes(), op->getOperand(0), filledTensor, affineMaps,
         iteratorTypes,
         [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
           Value scalarOp = rewriter.create<tiny::AddOp>(
