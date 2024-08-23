@@ -20,7 +20,7 @@ def Tiny_Int : AnyTypeOf<[I1, I8, I16, I32, I64]>;
 
 def Tiny_ElementType : AnyTypeOf<[Tiny_Float, Tiny_Int]>;
 
-def Tiny_1DTensor : 1DTensorOf<[Tiny_ElementType]>;
+def Tiny_0DTensor : 0DTensorOf<[Tiny_ElementType]>;
 
 def Tiny_Tensor : RankedTensorOf<[Tiny_ElementType]>;
 def Tiny_FloatTensor : RankedTensorOf<[Tiny_Float]>;

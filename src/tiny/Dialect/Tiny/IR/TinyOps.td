@@ -462,7 +462,7 @@ def Tiny_ViewOp : Tiny_LoadOp<"view", [
 }
 
 // TODO: Pure?
-def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
+def Tiny_RandNOp : Tiny_LoadOp<"randn", []> {
   let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
@@ -476,8 +476,8 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
 }
 
 // TODO: Pure?
-def Tiny_FillOp : Tiny_LoadOp<"fill", [SameOperandsAndResultShape]> {
-  let arguments = (ins Tiny_TensorOrMemRef:$value,  Tiny_1DTensor:$fill_value);
+def Tiny_FillOp : Tiny_LoadOp<"fill", []> {
+  let arguments = (ins Tiny_TensorOrMemRef:$value,  Tiny_0DTensor:$fill_value);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Fills a tensor with value.";

@@ -177,7 +177,6 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
     Value resultTensor = rewriter.create<tiny::EmptyOp>(
         op->getLoc(), resultType.getShape(), resultType.getElementType());
 
-    // TODO: Remove this somehow, since we don't need an attr here
     auto initialValue =
         selectInitialValue(op, resultType.getElementType(), rewriter);
 
@@ -185,20 +184,22 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
       return rewriter.notifyMatchFailure(
           op, "initial value does not exist for reduction op.");
 
-    // TODO: Specific to Tiny. Requires everything to be tensors even 1-D
-    auto constantTensor = rewriter.create<tiny::ConstantOp>(
-        op->getLoc(),
-        DenseElementsAttr::get(
-            RankedTensorType::get({1}, resultType.getElementType()),
-            initialValue));
-
-    auto filledTensor =
+    // Note: Specific to Tiny. Requires everything to be tensors even 0-D
+    auto constantTensor =
         rewriter
-            .create<tiny::FillOp>(op->getLoc(), resultType.getElementType(),
-                                  resultTensor, constantTensor)
-            .getOperation()
-            ->getResults()
-            .front();
+            .create<tiny::ConstantOp>(
+                op->getLoc(),
+                DenseElementsAttr::get(
+                    RankedTensorType::get({}, resultType.getElementType()),
+                    initialValue))
+            .getResult();
+
+    auto filledTensor = rewriter
+                            .create<tiny::FillOp>(op->getLoc(), resultType,
+                                                  resultTensor, constantTensor)
+                            .getOperation()
+                            ->getResults()
+                            .front();
 
     SmallVector<AffineExpr> resultExpr;
     SmallVector<utils::IteratorType> iteratorTypes;
