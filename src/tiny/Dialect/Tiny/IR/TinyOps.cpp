@@ -1,13 +1,15 @@
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Traits.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
-#include "mlir/IR/ExtensibleDialect.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
+#include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"
@@ -16,6 +18,7 @@
 #include "mlir/Interfaces/FunctionImplementation.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
+#include "mlir/Interfaces/ViewLikeInterface.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -23,11 +26,13 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/Casting.h"
+#include <functional>
+#include <numeric>
+#include <sys/_types/_int64_t.h>
 
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
 namespace mlir::tiny {
-
 /*
 ---------------------------------------------------
 ------------------ UTILITY OPS --------------------
@@ -99,6 +104,18 @@ LogicalResult SliceOp::inferReturnTypes(
   return success();
 }
 
+/* ------------------ Shape Op ------------------- */
+void ShapeOp::build(OpBuilder &builder, OperationState &result,
+                    llvm::ArrayRef<int64_t> shape, Type elementType) {
+  // possible to create shape from array ref?
+  auto shapeVec = llvm::to_vector(llvm::map_range(shape, [&](int64_t dim) {
+    return dyn_cast<Attribute>(builder.getI64IntegerAttr(dim));
+  }));
+
+  auto shapeAttr = builder.getArrayAttr(shapeVec);
+  auto tensorType = RankedTensorType::get(shape, elementType);
+  build(builder, result, tensorType, shapeAttr, elementType);
+}
 /*
 ---------------------------------------------------
 ------------------- CONSTANT OP -------------------
@@ -177,6 +194,28 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   return succeeded(verifyCompatibleShape(input, output));
 }
 
+/* ------------------ Cast Op ------------------- */
+
+bool BitcastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  if (inputs.size() != 1 || outputs.size() != 1) {
+    return false;
+  }
+
+  auto input = llvm::dyn_cast<TensorType>(inputs.front());
+  auto output = llvm::dyn_cast<TensorType>(outputs.front());
+
+  if (!input || !output) {
+    return false;
+  }
+
+  // The shape is required to match if both types are ranked.
+  return succeeded(verifyCompatibleShape(input, output));
+}
+
+/* ------------------ NoOp Op ------------------- */
+
+// OpFoldResult NoOp::fold(FoldAdaptor adaptor) { return getValue(); }
+
 /*
 ---------------------------------------------------
 ------------------- REDUCE OPS --------------------
@@ -243,7 +282,7 @@ LogicalResult SumOp::inferReturnTypeComponents(
 
 LogicalResult BinaryOpShapeInference(
     ValueShapeRange operands,
-    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
+    SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes, Location loc) {
   auto lhs = operands.getValueAsShape(0);
   auto rhs = operands.getValueAsShape(1);
 
@@ -254,7 +293,7 @@ LogicalResult BinaryOpShapeInference(
 
   if (!OpTrait::util::getBroadcastedShape(lhsShape.getDims(),
                                           rhsShape.getDims(), resultShape)) {
-    return failure();
+    return emitError(loc, "binary op shapes not broadcastable.");
   }
 
   inferredReturnShapes.emplace_back(ArrayRef(resultShape),
@@ -270,7 +309,7 @@ LogicalResult AddOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /* ------------------ Sub Op ---------------------- */
@@ -280,7 +319,7 @@ LogicalResult SubOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /* ------------------ Mul Op ---------------------- */
@@ -290,7 +329,7 @@ LogicalResult MulOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /* ------------------ Div Op ---------------------- */
@@ -300,7 +339,7 @@ LogicalResult DivOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /* ----------------- CMPNe Op --------------------- */
@@ -310,7 +349,7 @@ LogicalResult CmpNeOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /* ----------------- CMPLT Op --------------------- */
@@ -320,7 +359,7 @@ LogicalResult CmpLtOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /* ------------------ Maximum Op ---------------------- */
@@ -330,24 +369,30 @@ LogicalResult MaximumOp::inferReturnTypeComponents(
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
+
+/* --------------------- Mod Op ---------------------- */
 
 LogicalResult ModOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
+
+/* --------------------- XOR Op ---------------------- */
 
 LogicalResult XOROp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     ValueShapeRange operands, DictionaryAttr attributes,
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
+
+/* --------------------- Shl Op ---------------------- */
 
 LogicalResult ShlOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -355,8 +400,10 @@ LogicalResult ShlOp::inferReturnTypeComponents(
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   // TODO: Check if this fails for any cases since operand 1 is IndexAttr
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
+
+/* --------------------- Shr Op ---------------------- */
 
 LogicalResult ShrOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -364,7 +411,7 @@ LogicalResult ShrOp::inferReturnTypeComponents(
     OpaqueProperties properties, RegionRange regions,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   // TODO: Check if this fails for any cases since operand 1 is IndexAttr
-  return BinaryOpShapeInference(operands, inferredReturnShapes);
+  return BinaryOpShapeInference(operands, inferredReturnShapes, *location);
 }
 
 /*
@@ -372,12 +419,40 @@ LogicalResult ShrOp::inferReturnTypeComponents(
 -------------------- LOAD OPS ---------------------
 --------------------------------------------------- */
 
+/* ------------------ Empty Op -------------------- */
+
 LogicalResult EmptyOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
     EmptyOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
-  auto shape = dyn_cast<ShapeType>(adaptor.getShape().getType());
-  inferredReturnShapes.emplace_back(shape.getShape(), shape.getElementType());
+  inferredReturnShapes.emplace_back(adaptor.getShape(),
+                                    adaptor.getElementType());
+  return success();
+}
+
+/* ------------------- View Op -------------------- */
+
+void ViewOp::getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn) {
+  setNameFn(getResult(), "view");
+}
+
+Value ViewOp::getViewSource() { return getValue(); }
+
+LogicalResult
+ViewShapeInference(RankedTensorType valueType, ArrayRef<int64_t> shape,
+                   SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes,
+                   Location loc, StringLiteral opName) {
+  int64_t tensorNumel = valueType.getNumElements();
+
+  int64_t shapeNumel = std::accumulate(shape.begin(), shape.end(), 1,
+                                       std::multiplies<int64_t>());
+
+  if (tensorNumel != shapeNumel) {
+    return emitError(loc, "Tensor and Shape numel not equal: ")
+           << tensorNumel << " != " << shapeNumel;
+  }
+
+  inferredReturnShapes.emplace_back(shape, valueType.getElementType());
   return success();
 }
 
@@ -386,16 +461,18 @@ LogicalResult ViewOp::inferReturnTypeComponents(
     ViewOpAdaptor adaptor,
     SmallVectorImpl<ShapedTypeComponents> &inferredReturnShapes) {
   auto valueType = dyn_cast<RankedTensorType>(adaptor.getValue().getType());
-  auto slices = adaptor.getSlice();
+  auto shape = adaptor.getShape();
 
-  return SliceShapeInference(valueType, slices, inferredReturnShapes, *location,
-                             getOperationName());
+  return ViewShapeInference(valueType, shape, inferredReturnShapes, *location,
+                            getOperationName());
 }
 
 /*
 ---------------------------------------------------
 ------------------- BUFFER OPS --------------------
 --------------------------------------------------- */
+
+/* ------------------- Load Op -------------------- */
 
 LogicalResult LoadOp::inferReturnTypeComponents(
     MLIRContext *context, std::optional<Location> location,
@@ -407,6 +484,8 @@ LogicalResult LoadOp::inferReturnTypeComponents(
   return SliceShapeInference(valueType, slices, inferredReturnShapes, *location,
                              getOperationName());
 }
+
+/* ----------------- Store Op ------------------- */
 
 LogicalResult StoreOp::verify() {
   SmallVector<ShapedTypeComponents> slicedShapes;

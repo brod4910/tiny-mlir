@@ -10,8 +10,10 @@ include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/Interfaces/FunctionInterfaces.td"
+include "mlir/Interfaces/MemorySlotInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/Interfaces/ViewLikeInterface.td"
 
 include "mlir/IR/BuiltinAttributes.td"
 include "mlir/IR/CommonTypeConstraints.td"
@@ -32,6 +34,21 @@ class Tiny_Op <string mnemonic, list<Trait> traits = []> : Op<Tiny_Dialect, mnem
 --------------------------------------------------- 
 -------------------- Traits -----------------------
 --------------------------------------------------- */
+
+/* 
+ Op can be assumed to be an elementwise op with the option to 
+ broadcast when the op isn't initially elementwise mappable.
+ example:
+  %0 = tiny.mul %a, %b : (tensor<10x1x784>, tensor<10x10x1>) -> tensor<10x10x784>
+
+*/
+def ElementwiseBroadcastable : NativeOpTrait<"ElementwiseBroadcastable"> {
+  let cppNamespace = "mlir::tiny";
+}
+
+def Reducer : NativeOpTrait<"Reducer"> {
+  let cppNamespace = "mlir::tiny";
+}
 
 /* 
 --------------------------------------------------- 
@@ -56,6 +73,10 @@ def Tiny_ShapeOp : Tiny_Op<"shape", [NoMemoryEffect]> {
     let assemblyFormat = [{
       $shape `,` $elementType attr-dict `:` type($result)
     }];
+
+    let builders = [
+      OpBuilder<(ins "ArrayRef<int64_t>":$shape, "Type":$elementType)>
+    ];
 }
 
 /* 
@@ -65,7 +86,7 @@ def Tiny_ShapeOp : Tiny_Op<"shape", [NoMemoryEffect]> {
 
 def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["value", "result"]>]> {
   let arguments = (ins ElementsAttrInterface: $value);
-  let results = (outs Tiny_Tensor: $result);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
   let extraClassDeclaration = [{
     static bool verifyWith(Attribute value, Type type);
@@ -84,11 +105,15 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["v
 ------------------- UNARY OPS ---------------------
 --------------------------------------------------- */
 
+// TODO: Add folders using CommonFolders
+
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
-    let arguments = (ins Tiny_Tensor:$value);
-    let results = (outs Tiny_Tensor:$result);
+    let arguments = (ins Tiny_AnyType:$value);
+    let results = (outs Tiny_AnyType:$result);
 
     let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
+
+    // let hasFolder = 1;
 }
 
 def Tiny_NoOp : Tiny_UnaryOp<"noop"> {
@@ -99,7 +124,11 @@ def Tiny_NoOp : Tiny_UnaryOp<"noop"> {
     }];
 }
 
-def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [
+                                        ElementwiseMappable,
+                                        Pure, 
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Two raised by value.";
 
     let description = [{
@@ -107,7 +136,11 @@ def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_Log2Op : Tiny_UnaryOp<"log2", [
+                                        ElementwiseMappable,
+                                        Pure, 
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Binary (base-2) logarithm of the value.";
 
     let description = [{
@@ -115,9 +148,11 @@ def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterface>,
+def Tiny_CastOp : Tiny_UnaryOp<"cast", [
+                                        DeclareOpInterfaceMethods<CastOpInterface>,
                                         Pure,
-                                        SameOperandsAndResultShape]> {
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Cast the value to another qualified-type.";
 
     let description = [{
@@ -125,7 +160,23 @@ def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterfac
     }];
 }
 
-def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_BitcastOp : Tiny_UnaryOp<"Bitcast", [
+                                              DeclareOpInterfaceMethods<CastOpInterface>,
+                                              Pure,
+                                              SameOperandsAndResultShape
+                                             ]> {
+    let summary = "Cast the value to another type without copying memory.";
+
+    let description = [{
+        An operation that casts the value to another qualified-type.
+    }];
+}
+
+def Tiny_SinOp : Tiny_UnaryOp<"sin", [
+                                      ElementwiseMappable,
+                                      Pure, 
+                                      SameOperandsAndResultShape
+                                     ]> {
     let summary = "Sine of the value.";
 
     let description = [{
@@ -133,7 +184,11 @@ def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAnd
     }];
 }
 
-def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [
+                                        ElementwiseMappable,
+                                        Pure, 
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Square-root of the value";
 
     let description = [{
@@ -141,7 +196,11 @@ def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_NegOp : Tiny_UnaryOp<"neg", [
+                                      ElementwiseMappable,
+                                      Pure, 
+                                      SameOperandsAndResultShape
+                                     ]> {
     let summary = "Negate the value.";
 
     let description = [{
@@ -149,7 +208,11 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
     }];
 }
 
-def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_RecipOp : Tiny_UnaryOp<"recip", [
+                                          ElementwiseMappable,
+                                          Pure, 
+                                          SameOperandsAndResultShape
+                                         ]> {
     let summary = "reciprocal of the value.";
 
     let description = [{
@@ -163,9 +226,9 @@ def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperand
 --------------------------------------------------- */
 
 class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_Tensor: $value, 
-                   DefaultValuedAttr<I32Attr, "0">: $axis);
-  let results = (outs Tiny_Tensor: $result);
+  let arguments = (ins Tiny_AnyType: $value, 
+                   DefaultValuedAttr<SI32Attr, "0">: $axis);
+  let results = (outs Tiny_AnyType: $result);
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
@@ -173,6 +236,7 @@ class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_MaxOp : Tiny_ReduceOp<"max", [
                                        InferTensorTypeAdaptor,
                                        Pure,
+                                       Reducer
                                       ]> {
   let summary = "Max value along the axis.";
 
@@ -184,6 +248,7 @@ def Tiny_MaxOp : Tiny_ReduceOp<"max", [
 def Tiny_SumOp : Tiny_ReduceOp<"sum", [
                                        InferTensorTypeAdaptor,
                                        Pure,
+                                       Reducer
                                       ]> {
   let summary = "Sum along the axis.";
 
@@ -197,12 +262,11 @@ def Tiny_SumOp : Tiny_ReduceOp<"sum", [
 ------------------- BINARY OPS --------------------
 --------------------------------------------------- */
 
-// TODO: Explore elementwise mappable trait for broadcasted
-// tensors
+// TODO: Add folders using CommonFolders
 
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_Tensor: $lhs, Tiny_Tensor: $rhs);
-  let results = (outs Tiny_Tensor: $result);
+  let arguments = (ins Tiny_AnyType: $lhs, Tiny_AnyType: $rhs);
+  let results = (outs Tiny_AnyType: $result);
   
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
@@ -210,8 +274,8 @@ class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 def Tiny_AddOp : Tiny_BinaryOp<"add", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
-                                       Pure,
-                                       ResultsBroadcastableShape, 
+                                       ElementwiseBroadcastable,
+                                       Pure, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Add two tensors";
@@ -223,8 +287,8 @@ def Tiny_AddOp : Tiny_BinaryOp<"add", [
 
 def Tiny_SubOp : Tiny_BinaryOp<"sub", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       ElementwiseBroadcastable,
                                        Pure, 
-                                       ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Subtract two tensors";
@@ -238,7 +302,7 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                        Commutative,
                                        Pure,
-                                       ResultsBroadcastableShape, 
+                                       ElementwiseBroadcastable,
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Multiply two tensors";
@@ -250,8 +314,8 @@ def Tiny_MulOp : Tiny_BinaryOp<"mul", [
 
 def Tiny_DivOp : Tiny_BinaryOp<"div", [
                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                       ElementwiseBroadcastable,
                                        Pure, 
-                                       ResultsBroadcastableShape, 
                                        SameOperandsAndResultElementType
                                       ]> {
   let summary = "Divide two tensors";
@@ -263,8 +327,9 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
 
 def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                           Commutative,
+                                           ElementwiseBroadcastable,
                                            Pure, 
-                                           ResultsBroadcastableShape, 
                                            SameOperandsAndResultElementType
                                           ]> {
   let summary = "Compares whether the values in the tensor are equal";
@@ -276,8 +341,8 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
 
 def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                           ElementwiseBroadcastable,
                                            Pure, 
-                                           ResultsBroadcastableShape, 
                                            SameOperandsAndResultElementType
                                           ]> {
   let summary = "Compares whether the values in the tensor are less-than";
@@ -289,9 +354,9 @@ def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
 
 def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
                                                DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                               Pure, 
                                                Commutative,
-                                               ResultsBroadcastableShape, 
+                                               ElementwiseBroadcastable,
+                                               Pure,  
                                                SameOperandsAndResultElementType
                                               ]> {
   let summary = "Take the max of the two tensors";
@@ -303,8 +368,8 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 
 def Tiny_ModOp : Tiny_BinaryOp<"mod", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                        ElementwiseBroadcastable,
                                         Pure, 
-                                        ResultsBroadcastableShape, 
                                         SameOperandsAndResultElementType
                                       ]> {
   let summary = "Take the mod of the two tensors";
@@ -316,9 +381,9 @@ def Tiny_ModOp : Tiny_BinaryOp<"mod", [
 
 def Tiny_XOROp : Tiny_BinaryOp<"xor", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
                                         Commutative,
-                                        ResultsBroadcastableShape, 
+                                        ElementwiseBroadcastable,
+                                        Pure,  
                                         SameOperandsAndResultElementType
                                       ]> {
   let summary = "Take the xor of the two tensors";
@@ -330,9 +395,10 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
 
 def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
+                                        ElementwiseBroadcastable,
+                                        Pure
                                       ]> {
-  let arguments = (ins Tiny_Tensor: $lhs, IndexAttr: $rhs);
+  let arguments = (ins Tiny_TensorOrMemRef: $lhs, IndexAttr: $rhs);
   let summary = "Shift LHS right by RHS.";
   
   let description = [{
@@ -344,9 +410,10 @@ def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
 
 def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        Pure, 
+                                        ElementwiseBroadcastable,
+                                        Pure
                                       ]> {
-  let arguments = (ins Tiny_Tensor: $lhs, IndexAttr: $rhs);
+  let arguments = (ins Tiny_TensorOrMemRef: $lhs, IndexAttr: $rhs);
   let summary = "Shift LHS left by RHS.";
   
   let description = [{
@@ -363,10 +430,9 @@ def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
 
 class Tiny_LoadOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
 
-// TODO: Pure?
-def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_ShapeType: $shape);
-  let results = (outs Tiny_Tensor: $result);
+def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor, Pure]> {
+  let arguments = (ins DenseI64ArrayAttr: $shape, TypeAttr:$elementType);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Initializes an empty tensor.";
 
@@ -374,14 +440,12 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
     Initializes an empty tensor of the specific shape and type.
   }];
 
-
-  let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$shape `,` $elementType attr-dict `:` functional-type(operands, results)";
 }
 
-// TODO: Pure?
-def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape]> {
-  let arguments = (ins Tiny_Tensor: $value);
-  let results = (outs Tiny_Tensor: $result);
+def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape, Pure]> {
+  let arguments = (ins Tiny_TensorOrMemRef: $value);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Copies a tensor.";
 
@@ -389,41 +453,44 @@ def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape]> {
     Initializes a new tensor by copying another.
   }];
 
-  let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value attr-dict `:` functional-type(operands, results)";
 }
 
-// TODO: Pure?
-def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> {
-  let arguments = (ins Tiny_Tensor: $value);
-  let results = (outs Tiny_Tensor: $result);
+def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape, Pure]> {
+  let arguments = (ins Tiny_TensorOrMemRef: $value);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
-  let summary = "Makes a tensor contiguous.";
+  let summary = "Makes a contiguous copy of the value tensor.";
 
   let description = [{
-    Initializes a new tensor by making it contiguous. This will most likely
-    this function will be most useful from a tiny.load or a tiny.view. Otherwise, use copy.
+    Initializes a new tensor by making it contiguous. This this function will be most useful 
+    from a tiny.load or a tiny.view. Otherwise, use copy.
   }];
 
-  let assemblyFormat = "$value  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_ViewOp : Tiny_LoadOp<"view", [Pure, InferTensorTypeAdaptor]> {
-  let arguments = (ins Tiny_Tensor: $value, Variadic<Tiny_SliceType>:$slice);
-  let results = (outs Tiny_Tensor: $result);
+def Tiny_ViewOp : Tiny_LoadOp<"view", [
+                                       DeclareOpInterfaceMethods<OpAsmOpInterface, ["getAsmResultNames"]>,
+                                       DeclareOpInterfaceMethods<ViewLikeOpInterface>,
+                                       Pure,
+                                       InferTensorTypeAdaptor]> {
+  let arguments = (ins Tiny_TensorOrMemRef: $value, DenseI64ArrayAttr: $shape);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Creates a view of a tensor.";
 
   let description = [{
-    Initializes a new tensor which is a view of the operand.
+    Initializes a new tensor which is a view of the value operand.
   }];
 
-  let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = 
+      "$value $shape attr-dict `:` type($value) `->` type($result)";
 }
 
-// TODO: Pure?
-def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
-  let arguments = (ins Tiny_ShapeType: $shape);
-  let results = (outs Tiny_FloatTensor: $result);
+def Tiny_RandNOp : Tiny_LoadOp<"randn", [Pure]> {
+  let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Makes a random tensor.";
 
@@ -431,7 +498,20 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", [SameOperandsAndResultShape]> {
     Initializes a new tensor with random values between 0-1.
   }];
 
-  let assemblyFormat = "$shape  attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+}
+
+def Tiny_FillOp : Tiny_LoadOp<"fill", []> {
+  let arguments = (ins Tiny_TensorOrMemRef:$value,  Tiny_ScalarTensor:$fill_value);
+  let results = (outs Tiny_TensorOrMemRef: $result);
+
+  let summary = "Fills a tensor with value.";
+
+  let description = [{
+    Initializes a new tensor with fill value.
+  }];
+
+  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
 /* 
@@ -443,12 +523,11 @@ class Tiny_BufferOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic
 
 def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
                                          /* MemRefsNormalizable,*/
-                                         PredOpTrait<"tensor and result have same element type",
-                                            TCresVTEtIsSameAsOp<0, 0>>]> {
-  let arguments = (ins Arg<Tiny_Tensor, "source to load from",
+                                         ]> {
+  let arguments = (ins Arg<Tiny_TensorOrMemRef, "source to load from",
                            [MemRead]>: $value,
                        Variadic<Tiny_SliceType>:$slice);
-  let results = (outs Tiny_Tensor: $result);
+  let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Load value into memory";
 
@@ -457,12 +536,13 @@ def Tiny_LoadOp : Tiny_BufferOp<"load", [InferTensorTypeAdaptor,
   }];
 
   let assemblyFormat = "$value (`[` $slice^ `]`)? attr-dict `:` functional-type(operands, results)";
+  // let hasFolder = 1;
 }
 
 def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
-  let arguments = (ins  Tiny_Tensor:$src,
+  let arguments = (ins  Tiny_TensorOrMemRef:$src,
                         Variadic<Tiny_SliceType>:$src_slice,
-                        Arg<Tiny_Tensor, "target reference to store to", 
+                        Arg<Tiny_TensorOrMemRef, "target reference to store to", 
                             [MemWrite]>: $dst,
                         Variadic<Tiny_SliceType>:$dst_slice);
   let results = (outs);
@@ -479,6 +559,7 @@ def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
   }];
 
   let hasVerifier = 1;
+  // let hasFolder = 1;
 }
 
 /* 
@@ -487,22 +568,23 @@ def Tiny_StoreOp : Tiny_BufferOp<"store", [AttrSizedOperandSegments]> {
 --------------------------------------------------- */
 
 class Tiny_TernaryOp<string mnemonic, list<Trait> traits = []> :  Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_Tensor: $a, 
-                       Tiny_Tensor: $b, 
-                       Tiny_Tensor: $c);
+  let arguments = (ins Tiny_TensorOrMemRef: $a, 
+                       Tiny_TensorOrMemRef: $b, 
+                       Tiny_TensorOrMemRef: $c);
 
-  let results = (outs Tiny_Tensor: $result);
+  let results = (outs Tiny_TensorOrMemRef: $result);
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
 def Tiny_WhereOp : Tiny_TernaryOp<"where", [
                                             InferTensorTypeAdaptor,
+                                            ElementwiseMappable,
                                             Pure
                                            ]> {
   // override args since they have more semantic meaning for where ops.
-  let arguments = (ins Tiny_Tensor: $condition, 
-                       Tiny_Tensor: $input, 
-                       Tiny_Tensor: $other);
+  let arguments = (ins Tiny_TensorOrMemRef: $condition, 
+                       Tiny_TensorOrMemRef: $input, 
+                       Tiny_TensorOrMemRef: $other);
   let summary = "Produces a tensor of input or other depending on condition";
 
   let description = [{
@@ -513,6 +595,7 @@ def Tiny_WhereOp : Tiny_TernaryOp<"where", [
 
 def Tiny_MulAccOp : Tiny_TernaryOp<"mulacc", [
                                               InferTensorTypeAdaptor,
+                                              ElementwiseMappable,
                                               Pure
                                              ]> {
   let summary = "Computes a multiply-accumulate operation in the form of: (a * b) + c";
@@ -528,6 +611,16 @@ def Tiny_MulAccOp : Tiny_TernaryOp<"mulacc", [
 --------------------------------------------------- 
 
             COPIED FROM THE MLIR REPO
+
+Note:
+  Mulling over this section for now. I don't think Tiny needs or wants special
+  Function semantics but that could change in the future. I found that modifying or
+  creating new function semantics to be rather difficult at this point in time (July 9 2024).
+
+  This section will just get converted to the Func dialect but may change in the future.
+  Triton modifies the func operators for inlining but i belive function inlining has improved
+  through the use of the Inliner pass located at mlir/Transforms/Passes.td not tested at this time
+  and this is just an assumption to be proven correct or incorrect later.
 */
 
 

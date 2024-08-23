@@ -1,1 +1,2 @@
 add_subdirectory(TinyToAccl)
+add_subdirectory(TinyToLLVM)

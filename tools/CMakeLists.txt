@@ -9,6 +9,7 @@ set (LIBS
     MLIRTinyAccl
     MLIRTinyAcclTransforms
     TinyToAccl
+    TinyToLLVM
     MLIRPass
     MLIRTransforms
     ${dialect_libs}
