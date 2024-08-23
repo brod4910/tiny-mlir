@@ -11,7 +11,7 @@ include "mlir/IR/OpBase.td"
 
 /* 
 --------------------------------------------------- 
------------------- Tensor Types -------------------
+-------------- Tensor & Element Types -------------
 --------------------------------------------------- */
 
 def Tiny_Float : AnyTypeOf<[BF16, F16, F32, F64]>;
@@ -20,7 +20,7 @@ def Tiny_Int : AnyTypeOf<[I1, I8, I16, I32, I64]>;
 
 def Tiny_ElementType : AnyTypeOf<[Tiny_Float, Tiny_Int]>;
 
-def Tiny_0DTensor : 0DTensorOf<[Tiny_ElementType]>;
+def Tiny_ScalarTensor : 0DTensorOf<[Tiny_ElementType]>;
 
 def Tiny_Tensor : RankedTensorOf<[Tiny_ElementType]>;
 def Tiny_FloatTensor : RankedTensorOf<[Tiny_Float]>;
@@ -31,7 +31,7 @@ def Tiny_FloatMemRef : Non0RankedMemRefOf<[Tiny_Float]>;
 def Tiny_TensorOrMemRef : AnyTypeOf<[Tiny_Tensor, Tiny_MemRef]>;
 def Tiny_FloatShapedType : AnyTypeOf<[Tiny_FloatTensor, Tiny_FloatMemRef]>;
 
-def Tiny_ValidType : AnyTypeOf<[Tiny_TensorOrMemRef, Tiny_ElementType]>;
+def Tiny_AnyType : AnyTypeOf<[Tiny_TensorOrMemRef, Tiny_ElementType]>;
 
 /* 
 --------------------------------------------------- 

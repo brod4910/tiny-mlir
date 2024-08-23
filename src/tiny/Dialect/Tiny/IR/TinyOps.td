@@ -108,8 +108,8 @@ def Tiny_ConstantOp : Tiny_Op<"constant", [ConstantLike, Pure, AllTypesMatch<["v
 // TODO: Add folders using CommonFolders
 
 class Tiny_UnaryOp<string mnemonic, list<Trait> traits =[]> : Tiny_Op<mnemonic, traits> {
-    let arguments = (ins Tiny_ValidType:$value);
-    let results = (outs Tiny_ValidType:$result);
+    let arguments = (ins Tiny_AnyType:$value);
+    let results = (outs Tiny_AnyType:$result);
 
     let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
 
@@ -124,7 +124,11 @@ def Tiny_NoOp : Tiny_UnaryOp<"noop"> {
     }];
 }
 
-def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [
+                                        ElementwiseMappable,
+                                        Pure, 
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Two raised by value.";
 
     let description = [{
@@ -132,7 +136,11 @@ def Tiny_Exp2Op : Tiny_UnaryOp<"exp2", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_Log2Op : Tiny_UnaryOp<"log2", [
+                                        ElementwiseMappable,
+                                        Pure, 
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Binary (base-2) logarithm of the value.";
 
     let description = [{
@@ -140,9 +148,11 @@ def Tiny_Log2Op : Tiny_UnaryOp<"log2", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterface>,
+def Tiny_CastOp : Tiny_UnaryOp<"cast", [
+                                        DeclareOpInterfaceMethods<CastOpInterface>,
                                         Pure,
-                                        SameOperandsAndResultShape]> {
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Cast the value to another qualified-type.";
 
     let description = [{
@@ -150,9 +160,11 @@ def Tiny_CastOp : Tiny_UnaryOp<"cast", [DeclareOpInterfaceMethods<CastOpInterfac
     }];
 }
 
-def Tiny_BitcastOp : Tiny_UnaryOp<"Bitcast", [DeclareOpInterfaceMethods<CastOpInterface>,
-                                        Pure,
-                                        SameOperandsAndResultShape]> {
+def Tiny_BitcastOp : Tiny_UnaryOp<"Bitcast", [
+                                              DeclareOpInterfaceMethods<CastOpInterface>,
+                                              Pure,
+                                              SameOperandsAndResultShape
+                                             ]> {
     let summary = "Cast the value to another type without copying memory.";
 
     let description = [{
@@ -160,7 +172,11 @@ def Tiny_BitcastOp : Tiny_UnaryOp<"Bitcast", [DeclareOpInterfaceMethods<CastOpIn
     }];
 }
 
-def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_SinOp : Tiny_UnaryOp<"sin", [
+                                      ElementwiseMappable,
+                                      Pure, 
+                                      SameOperandsAndResultShape
+                                     ]> {
     let summary = "Sine of the value.";
 
     let description = [{
@@ -168,7 +184,11 @@ def Tiny_SinOp : Tiny_UnaryOp<"sin", [ElementwiseMappable, Pure, SameOperandsAnd
     }];
 }
 
-def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [
+                                        ElementwiseMappable,
+                                        Pure, 
+                                        SameOperandsAndResultShape
+                                       ]> {
     let summary = "Square-root of the value";
 
     let description = [{
@@ -176,7 +196,11 @@ def Tiny_SqrtOp : Tiny_UnaryOp<"sqrt", [ElementwiseMappable, Pure, SameOperandsA
     }];
 }
 
-def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_NegOp : Tiny_UnaryOp<"neg", [
+                                      ElementwiseMappable,
+                                      Pure, 
+                                      SameOperandsAndResultShape
+                                     ]> {
     let summary = "Negate the value.";
 
     let description = [{
@@ -184,7 +208,11 @@ def Tiny_NegOp : Tiny_UnaryOp<"neg", [ElementwiseMappable, Pure, SameOperandsAnd
     }];
 }
 
-def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperandsAndResultShape]> {
+def Tiny_RecipOp : Tiny_UnaryOp<"recip", [
+                                          ElementwiseMappable,
+                                          Pure, 
+                                          SameOperandsAndResultShape
+                                         ]> {
     let summary = "reciprocal of the value.";
 
     let description = [{
@@ -198,9 +226,9 @@ def Tiny_RecipOp : Tiny_UnaryOp<"recip", [ElementwiseMappable, Pure, SameOperand
 --------------------------------------------------- */
 
 class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_ValidType: $value, 
+  let arguments = (ins Tiny_AnyType: $value, 
                    DefaultValuedAttr<SI32Attr, "0">: $axis);
-  let results = (outs Tiny_ValidType: $result);
+  let results = (outs Tiny_AnyType: $result);
 
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
@@ -237,8 +265,8 @@ def Tiny_SumOp : Tiny_ReduceOp<"sum", [
 // TODO: Add folders using CommonFolders
 
 class Tiny_BinaryOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_ValidType: $lhs, Tiny_ValidType: $rhs);
-  let results = (outs Tiny_ValidType: $result);
+  let arguments = (ins Tiny_AnyType: $lhs, Tiny_AnyType: $rhs);
+  let results = (outs Tiny_AnyType: $result);
   
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
@@ -299,7 +327,8 @@ def Tiny_DivOp : Tiny_BinaryOp<"div", [
 
 def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                           Commutative,ElementwiseBroadcastable,
+                                           Commutative,
+                                           ElementwiseBroadcastable,
                                            Pure, 
                                            SameOperandsAndResultElementType
                                           ]> {
@@ -311,7 +340,8 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
 }
 
 def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
-                                           DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,ElementwiseBroadcastable,
+                                           DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                           ElementwiseBroadcastable,
                                            Pure, 
                                            SameOperandsAndResultElementType
                                           ]> {
@@ -400,8 +430,7 @@ def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
 
 class Tiny_LoadOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits>;
 
-// TODO: Pure?
-def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
+def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor, Pure]> {
   let arguments = (ins DenseI64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
@@ -414,8 +443,7 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor]> {
   let assemblyFormat = "$shape `,` $elementType attr-dict `:` functional-type(operands, results)";
 }
 
-// TODO: Pure?
-def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape]> {
+def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape, Pure]> {
   let arguments = (ins Tiny_TensorOrMemRef: $value);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
@@ -428,12 +456,11 @@ def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape]> {
   let assemblyFormat = "$value attr-dict `:` functional-type(operands, results)";
 }
 
-// TODO: Pure?
-def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape]> {
+def Tiny_ContiguousOp : Tiny_LoadOp<"contiguous", [SameOperandsAndResultShape, Pure]> {
   let arguments = (ins Tiny_TensorOrMemRef: $value);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
-  let summary = "Makes a tensor contiguous.";
+  let summary = "Makes a contiguous copy of the value tensor.";
 
   let description = [{
     Initializes a new tensor by making it contiguous. This this function will be most useful 
@@ -461,8 +488,7 @@ def Tiny_ViewOp : Tiny_LoadOp<"view", [
       "$value $shape attr-dict `:` type($value) `->` type($result)";
 }
 
-// TODO: Pure?
-def Tiny_RandNOp : Tiny_LoadOp<"randn", []> {
+def Tiny_RandNOp : Tiny_LoadOp<"randn", [Pure]> {
   let arguments = (ins I64ArrayAttr: $shape, TypeAttr:$elementType);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
@@ -475,9 +501,8 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", []> {
   let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
 }
 
-// TODO: Pure?
 def Tiny_FillOp : Tiny_LoadOp<"fill", []> {
-  let arguments = (ins Tiny_TensorOrMemRef:$value,  Tiny_0DTensor:$fill_value);
+  let arguments = (ins Tiny_TensorOrMemRef:$value,  Tiny_ScalarTensor:$fill_value);
   let results = (outs Tiny_TensorOrMemRef: $result);
 
   let summary = "Fills a tensor with value.";
