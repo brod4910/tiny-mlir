@@ -5,7 +5,6 @@ add_public_tablegen_target(TinyToLLVMConversionPassIncGen)
 add_tiny_library(TinyToLLVM
     TinyToLLVMPass.cpp
     ElementwiseOpToLLVM.cpp
-    FuncOpToLLVM.cpp
     
     DEPENDS
     TinyToLLVMConversionPassIncGen
