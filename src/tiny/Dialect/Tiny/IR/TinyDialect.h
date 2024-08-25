@@ -101,6 +101,7 @@ struct Reducer : public OpTrait::TraitBase<ConcreteType, Reducer> {
 #define GET_TYPEDEF_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyTypes.h.inc"
 
+#include "tiny/Dialect/Tiny/IR/TinyAttrsEnums.h.inc"
 #define GET_ATTRDEF_CLASSES
 #include "tiny/Dialect/Tiny/IR/TinyAttrs.h.inc"
 

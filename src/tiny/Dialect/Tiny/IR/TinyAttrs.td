@@ -5,6 +5,7 @@ include "tiny/Dialect/Tiny/IR/TinyDialect.td"
 include "tiny/Dialect/Tiny/IR/TinyTypes.td"
 
 include "mlir/IR/BuiltinAttributeInterfaces.td"
+include "mlir/IR/EnumAttr.td"
 include "mlir/IR/CommonAttrConstraints.td"
 include "mlir/IR/AttrTypeBase.td"
 
@@ -25,4 +26,33 @@ def Tiny_SlicedLayoutAttr : Tiny_Attr<"SlicedLayout", "sliced_layout", [DeclareA
     ArrayRefParameter<"SliceType", "array of slices">:$slices
   );
 }
+
+// MFLAGS = ('nsz', 'arcp', 'contract', 'afn', 'reassoc') # All from fast math,
+// but nnan and ninf
+// LLVM::FastmathFlags FMF{LLVM::FastmathFlags::nsz | LLVM::FastmathFlags::arcp |
+//                         LLVM::FastmathFlags::contract |
+//                         LLVM::FastmathFlags::afn |
+//                         LLVM::FastmathFlags::reassoc};
+
+
+def TFMFnsz : I32BitEnumAttrCaseBit<"nsz", 2>;
+def TFMFarcp : I32BitEnumAttrCaseBit<"arcp", 3>;
+def TFMFcontract : I32BitEnumAttrCaseBit<"contract", 4>;
+def TFMFafn : I32BitEnumAttrCaseBit<"afn", 5>;
+def TFMFreassoc : I32BitEnumAttrCaseBit<"reassoc", 6>;
+def TFMFfast : I32BitEnumAttrCaseGroup<"fast", [TFMFnsz, TFMFarcp, TFMFcontract, TFMFafn, TFMFreassoc]>;
+
+def FastmathFlags : I32BitEnumAttr<"FastmathFlags",
+                                   "Tiny Fast Math Flags",
+                                   [TFMFnsz, TFMFarcp, TFMFcontract, TFMFafn, TFMFreassoc, TFMFfast]> {
+  let separator = ",";
+  let cppNamespace = "::mlir::tiny";
+  let genSpecializedAttr = 0;
+  let printBitEnumPrimaryGroups = 1;
+}
+
+def Tiny_FastmathFlagsAttr : EnumAttr<Tiny_Dialect, FastmathFlags, "fastmath"> {
+  let assemblyFormat = "`<` $value `>`";
+}
+
 #endif // TINY_ATTRS

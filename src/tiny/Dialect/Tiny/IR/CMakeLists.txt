@@ -17,6 +17,7 @@ add_public_tablegen_target(TinyTypesIncGen)
 add_dependencies(mlir-headers TinyTypesIncGen)
 
 set(LLVM_TARGET_DEFINITIONS TinyAttrs.td)
+mlir_tablegen(TinyAttrsEnums.h.inc -gen-enum-decls)
 mlir_tablegen(TinyAttrs.h.inc -gen-attrdef-decls)
 mlir_tablegen(TinyAttrs.cpp.inc -gen-attrdef-defs)
 add_public_tablegen_target(TinyAttrsIncGen)
