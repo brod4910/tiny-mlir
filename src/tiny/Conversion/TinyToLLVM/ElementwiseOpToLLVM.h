@@ -11,22 +11,15 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 
+#include "tiny/Conversion/TinyToLLVM/TinyAttrConverter.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
+
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 
 namespace mlir::tiny {
-
-// MFLAGS = ('nsz', 'arcp', 'contract', 'afn', 'reassoc') # All from fast math,
-// but nnan and ninf
-
-LLVM::FastmathFlags FMF{LLVM::FastmathFlags::nsz | LLVM::FastmathFlags::arcp |
-                        LLVM::FastmathFlags::contract |
-                        LLVM::FastmathFlags::afn |
-                        LLVM::FastmathFlags::reassoc};
-
 /*
 Simple Lowering patterns that don't have multiple type versions of the same Op
 or that require special treatment when converting to LLMV.
@@ -69,7 +62,8 @@ class NegOpLowering : public ConvertOpToLLVMPattern<NegOp> {
     auto valueType = value.getType();
     auto eleType = getElementTypeOrSelf(valueType);
 
-    auto fmfAttr = LLVM::FastmathFlagsAttr::get(op.getContext(), FMF);
+    auto llvmFmf = convertTinyFastmathFlagsToLLVM();
+    auto fmfAttr = LLVM::FastmathFlagsAttr::get(op.getContext(), llvmFmf);
 
     auto fmfNamedAttr =
         rewriter.getNamedAttr(LLVM::FastmathFlagsAttr::name, fmfAttr);
@@ -115,7 +109,8 @@ class RecipOpLowering : public ConvertOpToLLVMPattern<RecipOp> {
     auto value = op.getValue();
     auto valueType = value.getType();
 
-    auto fmfAttr = LLVM::FastmathFlagsAttr::get(op.getContext(), FMF);
+    auto llvmFmf = convertTinyFastmathFlagsToLLVM();
+    auto fmfAttr = LLVM::FastmathFlagsAttr::get(op.getContext(), llvmFmf);
 
     auto fmfNamedAttr =
         rewriter.getNamedAttr(LLVM::FastmathFlagsAttr::name, fmfAttr);

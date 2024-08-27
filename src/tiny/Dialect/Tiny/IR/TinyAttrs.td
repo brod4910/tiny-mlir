@@ -42,6 +42,8 @@ def TFMFafn : I32BitEnumAttrCaseBit<"afn", 5>;
 def TFMFreassoc : I32BitEnumAttrCaseBit<"reassoc", 6>;
 def TFMFfast : I32BitEnumAttrCaseGroup<"fast", [TFMFnsz, TFMFarcp, TFMFcontract, TFMFafn, TFMFreassoc]>;
 
+
+// TODO: Default value that is just TFMFfast
 def FastmathFlags : I32BitEnumAttr<"FastmathFlags",
                                    "Tiny Fast Math Flags",
                                    [TFMFnsz, TFMFarcp, TFMFcontract, TFMFafn, TFMFreassoc, TFMFfast]> {
@@ -51,6 +53,7 @@ def FastmathFlags : I32BitEnumAttr<"FastmathFlags",
   let printBitEnumPrimaryGroups = 1;
 }
 
+// TODO: Might not be needed since we don't allow different flags 
 def Tiny_FastmathFlagsAttr : EnumAttr<Tiny_Dialect, FastmathFlags, "fastmath"> {
   let assemblyFormat = "`<` $value `>`";
 }
