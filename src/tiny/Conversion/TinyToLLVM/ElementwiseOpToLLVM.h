@@ -6,6 +6,7 @@
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/Support/LogicalResult.h"
@@ -48,6 +49,19 @@ TypedAttr getConstantAttr(Type type, int64_t value, PatternRewriter &rewriter) {
   }
 
   return rewriter.getIntegerAttr(type, value);
+}
+
+template <typename SourceOp, typename FloatOp, typename IntegerOp>
+llvm::StringLiteral selectOpFromElementType(SourceOp op, Type elementType) {
+  if (llvm::isa<FloatType>(elementType)) {
+    return FloatOp::getOperationName();
+  } else if (llvm::isa<IntegerType>(elementType)) {
+    return IntegerOp::getOperationName();
+  } else {
+    return emitError(op->getLoc(), "Element type should be one of: "
+                                   "IntegerType or FloatType but got: ")
+           << elementType;
+  }
 }
 
 class NegOpLowering : public ConvertOpToLLVMPattern<NegOp> {
@@ -122,6 +136,27 @@ class RecipOpLowering : public ConvertOpToLLVMPattern<RecipOp> {
     return LLVM::detail::vectorOneToOneRewrite(
         op, LLVM::FDivOp::getOperationName(), ValueRange{one, value},
         {fmfNamedAttr}, *getTypeConverter(), rewriter);
+  }
+};
+
+class MulOpLowering : public ConvertOpToLLVMPattern<MulOp> {
+  using ConvertOpToLLVMPattern<MulOp>::ConvertOpToLLVMPattern;
+
+  LogicalResult
+  matchAndRewrite(MulOp op, MulOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto result = op->getResult(0);
+    auto resultType = result.getType();
+    auto resultElementType = getElementTypeOrSelf(resultType);
+
+    auto operationName =
+        selectOpFromElementType<MulOp, LLVM::FMulOp, LLVM::MulOp>(
+            op, resultElementType);
+
+    auto llvmFMF = getTinyDefaultLLVMFastmathFlags(op->getContext(), rewriter);
+    return LLVM::detail::vectorOneToOneRewrite(op, operationName,
+                                               adaptor.getOperands(), {llvmFMF},
+                                               *getTypeConverter(), rewriter);
   }
 };
 } // namespace mlir::tiny

@@ -1,4 +1,5 @@
 #include "tiny/Conversion/TinyToLLVM/TinyAttrConverter.h"
+#include "mlir/IR/Attributes.h"
 
 namespace mlir::tiny {
 LLVM::FastmathFlags convertTinyFastmathFlagsToLLVM(FastmathFlags TFMF) {
@@ -41,4 +42,14 @@ LLVM::FastmathFlags convertTinyFastmathFlagsToLLVM(FastmathFlags TFMF) {
 
   return llvmFMF;
 }
+
+NamedAttribute
+getTinyDefaultLLVMFastmathFlags(MLIRContext *context,
+                                ConversionPatternRewriter &rewriter) {
+  auto llvmFmf = convertTinyFastmathFlagsToLLVM();
+  auto fmfAttr = LLVM::FastmathFlagsAttr::get(context, llvmFmf);
+
+  return rewriter.getNamedAttr(LLVM::FastmathFlagsAttr::name, fmfAttr);
+}
+
 } // namespace mlir::tiny
