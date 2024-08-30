@@ -17,6 +17,7 @@
 
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 
@@ -25,12 +26,11 @@ namespace mlir::tiny {
 Simple Lowering patterns that don't have multiple type versions of the same Op
 or that require special treatment when converting to LLMV.
 */
-using Log2OpLowering = VectorConvertToLLVMPattern<Log2Op, LLVM::Log2Op>;
-using BitcastOpLowering =
-    VectorConvertToLLVMPattern<BitcastOp, LLVM::BitcastOp>;
-using SinOpLowering = VectorConvertToLLVMPattern<SinOp, LLVM::SinOp>;
-using SqrtOpLowering = VectorConvertToLLVMPattern<SqrtOp, LLVM::SqrtOp>;
-using Exp2OpLowering = VectorConvertToLLVMPattern<Exp2Op, LLVM::Exp2Op>;
+using Log2OpToLLVM = VectorConvertToLLVMPattern<Log2Op, LLVM::Log2Op>;
+using BitcastOpToLLVM = VectorConvertToLLVMPattern<BitcastOp, LLVM::BitcastOp>;
+using SinOpToLLVM = VectorConvertToLLVMPattern<SinOp, LLVM::SinOp>;
+using SqrtOpToLLVM = VectorConvertToLLVMPattern<SqrtOp, LLVM::SqrtOp>;
+using Exp2OpToLLVM = VectorConvertToLLVMPattern<Exp2Op, LLVM::Exp2Op>;
 
 // TODO: implement Cast properly
 // using CastOpLowering = VectorConvertToLLVMPattern<CastOp, LLVM::Cast>
@@ -51,12 +51,16 @@ TypedAttr getConstantAttr(Type type, int64_t value, PatternRewriter &rewriter) {
   return rewriter.getIntegerAttr(type, value);
 }
 
-template <typename SourceOp, typename FloatOp, typename IntegerOp>
-llvm::StringLiteral selectOpFromElementType(SourceOp op, Type elementType) {
-  if (llvm::isa<FloatType>(elementType)) {
-    return FloatOp::getOperationName();
-  } else if (llvm::isa<IntegerType>(elementType)) {
-    return IntegerOp::getOperationName();
+template <typename SourceOp, typename Op1, typename Op2,
+          typename T1 = FloatType, typename T2 = IntegerType>
+LogicalResult selectOpFromElementType(SourceOp op, Type elementType,
+                                      llvm::StringLiteral &operationName) {
+  if (llvm::isa<T1>(elementType)) {
+    operationName = Op1::getOperationName();
+    return success();
+  } else if (llvm::isa<T2>(elementType)) {
+    operationName = Op2::getOperationName();
+    return success();
   } else {
     return emitError(op->getLoc(), "Element type should be one of: "
                                    "IntegerType or FloatType but got: ")
@@ -64,7 +68,7 @@ llvm::StringLiteral selectOpFromElementType(SourceOp op, Type elementType) {
   }
 }
 
-class NegOpLowering : public ConvertOpToLLVMPattern<NegOp> {
+class NegOpToLLVM : public ConvertOpToLLVMPattern<NegOp> {
   using ConvertOpToLLVMPattern<NegOp>::ConvertOpToLLVMPattern;
 
   LogicalResult
@@ -111,7 +115,7 @@ class NegOpLowering : public ConvertOpToLLVMPattern<NegOp> {
   }
 };
 
-class RecipOpLowering : public ConvertOpToLLVMPattern<RecipOp> {
+class RecipOpToLLVM : public ConvertOpToLLVMPattern<RecipOp> {
   using ConvertOpToLLVMPattern<RecipOp>::ConvertOpToLLVMPattern;
 
   LogicalResult
@@ -139,24 +143,45 @@ class RecipOpLowering : public ConvertOpToLLVMPattern<RecipOp> {
   }
 };
 
-class MulOpLowering : public ConvertOpToLLVMPattern<MulOp> {
-  using ConvertOpToLLVMPattern<MulOp>::ConvertOpToLLVMPattern;
+template <typename SourceOp, typename FloatOp, typename IntegerOp>
+class GenericBinaryOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
+  using ConvertOpToLLVMPattern<SourceOp>::ConvertOpToLLVMPattern;
+  using OpAdaptor = typename SourceOp::Adaptor;
 
   LogicalResult
-  matchAndRewrite(MulOp op, MulOp::Adaptor adaptor,
+  matchAndRewrite(SourceOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     auto result = op->getResult(0);
     auto resultType = result.getType();
     auto resultElementType = getElementTypeOrSelf(resultType);
 
-    auto operationName =
-        selectOpFromElementType<MulOp, LLVM::FMulOp, LLVM::MulOp>(
-            op, resultElementType);
+    llvm::StringLiteral operationName{""};
+
+    if (selectOpFromElementType<SourceOp, FloatOp, IntegerOp>(
+            op, resultElementType, operationName)
+            .failed()) {
+      return failure();
+    }
 
     auto llvmFMF = getTinyDefaultLLVMFastmathFlags(op->getContext(), rewriter);
-    return LLVM::detail::vectorOneToOneRewrite(op, operationName,
-                                               adaptor.getOperands(), {llvmFMF},
-                                               *getTypeConverter(), rewriter);
+    return LLVM::detail::vectorOneToOneRewrite(
+        op, operationName, adaptor.getOperands(), {llvmFMF},
+        *this->getTypeConverter(), rewriter);
   }
 };
+
+class CmpLtOpToLLVM : public ConvertOpToLLVMPattern<CmpLtOp> {
+  using ConvertOpToLLVMPattern<CmpLtOp>::ConvertOpToLLVMPattern;
+
+  LogicalResult
+  matchAndRewrite(CmpLtOp op, CmpLtOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto result = op->getResult(0);
+    auto resultType = result.getType();
+    auto resultElementType = getElementTypeOrSelf(resultType);
+
+    llvm::StringLiteral operationName{""};
+  }
+};
+
 } // namespace mlir::tiny

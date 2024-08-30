@@ -1,4 +1,6 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
+#include "mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Utils/Utils.h"
 #include "mlir/Dialect/Traits.h"
@@ -68,10 +70,12 @@ struct TinyBufferizePass
     auto module = getOperation();
     auto *context = &getContext();
 
-    BufferizationOptions options = getPartialBufferizationOptions();
+    OneShotBufferizationOptions options;
+    options.bufferizeFunctionBoundaries = true;
+    options.printConflicts = true;
     options.opFilter.allowDialect<tiny::TinyDialect>();
 
-    if (failed(bufferizeOp(getOperation(), options))) {
+    if (failed(runOneShotBufferize(getOperation(), options))) {
       return signalPassFailure();
     }
   }
@@ -128,7 +132,7 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
         [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
           auto *scalarOp =
               builder.create(loc, op->getName().getIdentifier(),
-                             regionArgs.take_back(op->getNumOperands()),
+                             regionArgs.take_front(op->getNumOperands()),
                              {resultType.getElementType()}, op->getAttrs());
           builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
         });
@@ -217,6 +221,9 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
         rewriter.getMultiDimIdentityMap(valueType.getRank()),
         AffineMap::get(valueType.getRank(), 0, resultExpr, op.getContext())};
 
+    // TODO: Fix the static add opp here since for reduction, we can take
+    // the max or sum. For sum this would work. For max we need to check
+    // the value at dim is greater than current value.
     rewriter.replaceOpWithNewOp<linalg::GenericOp>(
         op, op->getResultTypes(), op->getOperand(0), filledTensor, affineMaps,
         iteratorTypes,
