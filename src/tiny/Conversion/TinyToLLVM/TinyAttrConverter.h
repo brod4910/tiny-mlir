@@ -10,8 +10,12 @@ namespace mlir::tiny {
 LLVM::FastmathFlags convertTinyFastmathFlagsToLLVM(
     FastmathFlags TFMF = FastmathFlags{FastmathFlags::fast});
 
+LLVM::FastmathFlagsAttr
+getTinyDefaultLLVMFastmathFlagsAttr(MLIRContext *context,
+                                    ConversionPatternRewriter &rewriter);
+
 NamedAttribute
-getTinyDefaultLLVMFastmathFlags(MLIRContext *context,
-                                ConversionPatternRewriter &rewriter);
+getTinyDefaultLLVMFastmathFlagsNamedAttr(MLIRContext *context,
+                                         ConversionPatternRewriter &rewriter);
 
 } // namespace mlir::tiny

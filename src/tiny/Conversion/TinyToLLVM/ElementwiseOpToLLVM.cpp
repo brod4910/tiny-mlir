@@ -14,7 +14,7 @@ void populateElementwiseOpToLLVM(LLVMTypeConverter &converter,
       GenericBinaryOpToLLVMPattern<AddOp, LLVM::FAddOp, LLVM::AddOp>,
       GenericBinaryOpToLLVMPattern<SubOp, LLVM::FSubOp, LLVM::SubOp>,
       // TODO: Support UDivOp as well might need to be a non-generic Pattern
-      GenericBinaryOpToLLVMPattern<DivOp, LLVM::FDivOp, LLVM::SDivOp>>(
-      converter);
+      GenericBinaryOpToLLVMPattern<DivOp, LLVM::FDivOp, LLVM::SDivOp>,
+      CmpLtOpToLLVM>(converter);
 }
 } // namespace mlir::tiny

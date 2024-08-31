@@ -3,12 +3,16 @@
 #include "mlir/Conversion/LLVMCommon/VectorPattern.h"
 #include "mlir/Dialect/LLVMIR/LLVMAttrs.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -17,6 +21,7 @@
 
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
@@ -68,6 +73,34 @@ LogicalResult selectOpFromElementType(SourceOp op, Type elementType,
   }
 }
 
+template <typename TargetOp, typename OpAdaptor, typename... Args>
+LogicalResult vectorOneToOneRewrite(Operation *op, OpAdaptor adaptor,
+                                    const LLVMTypeConverter &typeConverter,
+                                    ConversionPatternRewriter &rewriter,
+                                    Args... args) {
+  if (!llvm::all_of(op->getOperandTypes(), LLVM::isCompatibleType)) {
+    return failure();
+  }
+
+  auto resultType = op->getResult(0).getType();
+
+  if (!llvm::isa<LLVM::LLVMArrayType>(adaptor.getLhs().getType())) {
+    rewriter.replaceOpWithNewOp<TargetOp>(
+        op, typeConverter.convertType(resultType), args...);
+    return success();
+  }
+
+  if (!isa<VectorType>(resultType))
+    return rewriter.notifyMatchFailure(op, "expected vector result type");
+
+  auto callback = [&](Type llvm1DVectorTy, ValueRange operands) {
+    return rewriter.create<TargetOp>(op->getLoc(), llvm1DVectorTy, args...);
+  };
+
+  return LLVM::detail::handleMultidimensionalVectors(
+      op, op->getOperands(), typeConverter, callback, rewriter);
+}
+
 class NegOpToLLVM : public ConvertOpToLLVMPattern<NegOp> {
   using ConvertOpToLLVMPattern<NegOp>::ConvertOpToLLVMPattern;
 
@@ -80,16 +113,13 @@ class NegOpToLLVM : public ConvertOpToLLVMPattern<NegOp> {
     auto valueType = value.getType();
     auto eleType = getElementTypeOrSelf(valueType);
 
-    auto llvmFmf = convertTinyFastmathFlagsToLLVM();
-    auto fmfAttr = LLVM::FastmathFlagsAttr::get(op.getContext(), llvmFmf);
-
-    auto fmfNamedAttr =
-        rewriter.getNamedAttr(LLVM::FastmathFlagsAttr::name, fmfAttr);
+    auto llvmFmf =
+        getTinyDefaultLLVMFastmathFlagsNamedAttr(op.getContext(), rewriter);
 
     if (llvm::isa<FloatType>(eleType)) {
       return LLVM::detail::vectorOneToOneRewrite(
           op, LLVM::FNegOp::getOperationName(), adaptor.getOperands(),
-          {fmfNamedAttr}, *getTypeConverter(), rewriter);
+          {llvmFmf}, *getTypeConverter(), rewriter);
     } else if (llvm::isa<IntegerType>(eleType)) {
       /*
       LLVM doesn't have an explicit INegOp so we create a sub 0, val Op.
@@ -100,8 +130,8 @@ class NegOpToLLVM : public ConvertOpToLLVMPattern<NegOp> {
           op.getLoc(), getConstantAttr(valueType, 0, rewriter));
 
       auto res = LLVM::detail::vectorOneToOneRewrite(
-          op, LLVM::SubOp::getOperationName(), ValueRange{zero, value},
-          {fmfNamedAttr}, *getTypeConverter(), rewriter);
+          op, LLVM::SubOp::getOperationName(), ValueRange{zero, value}, {},
+          *getTypeConverter(), rewriter);
 
       if (res.failed()) {
         emitRemark(op->getLoc(), "Failed Int Neg");
@@ -127,19 +157,16 @@ class RecipOpToLLVM : public ConvertOpToLLVMPattern<RecipOp> {
     auto value = op.getValue();
     auto valueType = value.getType();
 
-    auto llvmFmf = convertTinyFastmathFlagsToLLVM();
-    auto fmfAttr = LLVM::FastmathFlagsAttr::get(op.getContext(), llvmFmf);
-
-    auto fmfNamedAttr =
-        rewriter.getNamedAttr(LLVM::FastmathFlagsAttr::name, fmfAttr);
+    auto llvmFmf =
+        getTinyDefaultLLVMFastmathFlagsNamedAttr(op.getContext(), rewriter);
 
     auto one = rewriter.create<LLVM::ConstantOp>(
         op.getLoc(), getConstantAttr(valueType, 1, rewriter));
 
     AttrConvertPassThrough<RecipOp, LLVM::FDivOp> attrConvert(op);
     return LLVM::detail::vectorOneToOneRewrite(
-        op, LLVM::FDivOp::getOperationName(), ValueRange{one, value},
-        {fmfNamedAttr}, *getTypeConverter(), rewriter);
+        op, LLVM::FDivOp::getOperationName(), ValueRange{one, value}, {llvmFmf},
+        *getTypeConverter(), rewriter);
   }
 };
 
@@ -163,7 +190,8 @@ class GenericBinaryOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
       return failure();
     }
 
-    auto llvmFMF = getTinyDefaultLLVMFastmathFlags(op->getContext(), rewriter);
+    auto llvmFMF =
+        getTinyDefaultLLVMFastmathFlagsNamedAttr(op->getContext(), rewriter);
     return LLVM::detail::vectorOneToOneRewrite(
         op, operationName, adaptor.getOperands(), {llvmFMF},
         *this->getTypeConverter(), rewriter);
@@ -176,11 +204,32 @@ class CmpLtOpToLLVM : public ConvertOpToLLVMPattern<CmpLtOp> {
   LogicalResult
   matchAndRewrite(CmpLtOp op, CmpLtOp::Adaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    auto result = op->getResult(0);
-    auto resultType = result.getType();
-    auto resultElementType = getElementTypeOrSelf(resultType);
+    auto operandType = op.getLhs().getType();
+    auto elementType = getElementTypeOrSelf(operandType);
 
-    llvm::StringLiteral operationName{""};
+    if (llvm::isa<FloatType>(elementType)) {
+      auto predicate = LLVM::FCmpPredicateAttr::get(op.getContext(),
+                                                    LLVM::FCmpPredicate::ult);
+      auto llvmFMF =
+          getTinyDefaultLLVMFastmathFlagsAttr(op.getContext(), rewriter);
+
+      return vectorOneToOneRewrite<LLVM::FCmpOp, CmpLtOp::Adaptor,
+                                   LLVM::FCmpPredicateAttr, Value, Value,
+                                   LLVM::FastmathFlagsAttr>(
+          op, adaptor, *getTypeConverter(), rewriter, predicate,
+          adaptor.getLhs(), adaptor.getRhs(), llvmFMF);
+    } else if (llvm::isa<IntegerType>(elementType)) {
+      auto predicate = LLVM::FCmpPredicateAttr::get(op.getContext(),
+                                                    LLVM::FCmpPredicate::ult);
+      auto llvmFMF =
+          getTinyDefaultLLVMFastmathFlagsAttr(op.getContext(), rewriter);
+
+      return vectorOneToOneRewrite<LLVM::FCmpOp, CmpLtOp::Adaptor,
+                                   LLVM::FCmpPredicateAttr, Value, Value,
+                                   LLVM::FastmathFlagsAttr>(
+          op, adaptor, *getTypeConverter(), rewriter, predicate,
+          adaptor.getLhs(), adaptor.getRhs(), llvmFMF);
+    }
   }
 };
 

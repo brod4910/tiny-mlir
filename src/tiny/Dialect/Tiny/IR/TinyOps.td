@@ -329,9 +329,10 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                            Commutative,
                                            ElementwiseBroadcastable,
-                                           Pure, 
-                                           SameOperandsAndResultElementType
+                                           Pure,
+                                           SameOperandsElementType
                                           ]> {
+  let results = (outs Tiny_AnyBitType: $result);
   let summary = "Compares whether the values in the tensor are equal";
   
   let description = [{
@@ -342,9 +343,11 @@ def Tiny_CmpNeOp : Tiny_BinaryOp<"cmpne", [
 def Tiny_CmpLtOp : Tiny_BinaryOp<"cmplt", [
                                            DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                            ElementwiseBroadcastable,
-                                           Pure, 
-                                           SameOperandsAndResultElementType
+                                           Pure,
+                                           SameOperandsElementType
                                           ]> {
+  let results = (outs Tiny_AnyBitType: $result);
+
   let summary = "Compares whether the values in the tensor are less-than";
   
   let description = [{
