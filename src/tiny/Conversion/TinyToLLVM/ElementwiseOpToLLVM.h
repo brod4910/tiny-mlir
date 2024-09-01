@@ -113,10 +113,9 @@ class NegOpToLLVM : public ConvertOpToLLVMPattern<NegOp> {
     auto valueType = value.getType();
     auto eleType = getElementTypeOrSelf(valueType);
 
-    auto llvmFmf =
-        getTinyDefaultLLVMFastmathFlagsNamedAttr(op.getContext(), rewriter);
-
     if (llvm::isa<FloatType>(eleType)) {
+      auto llvmFmf =
+          getTinyDefaultLLVMFastmathFlagsNamedAttr(op.getContext(), rewriter);
       return LLVM::detail::vectorOneToOneRewrite(
           op, LLVM::FNegOp::getOperationName(), adaptor.getOperands(),
           {llvmFmf}, *getTypeConverter(), rewriter);
@@ -198,39 +197,41 @@ class GenericBinaryOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
   }
 };
 
-class CmpLtOpToLLVM : public ConvertOpToLLVMPattern<CmpLtOp> {
-  using ConvertOpToLLVMPattern<CmpLtOp>::ConvertOpToLLVMPattern;
+template <typename SourceOp, LLVM::FCmpPredicate FPredicate,
+          LLVM::ICmpPredicate IPredicate>
+class GenericCmpOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
+  using ConvertOpToLLVMPattern<SourceOp>::ConvertOpToLLVMPattern;
+  using OpAdaptor = typename SourceOp::Adaptor;
 
   LogicalResult
-  matchAndRewrite(CmpLtOp op, CmpLtOp::Adaptor adaptor,
+  matchAndRewrite(SourceOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     auto operandType = op.getLhs().getType();
     auto elementType = getElementTypeOrSelf(operandType);
 
     if (llvm::isa<FloatType>(elementType)) {
-      auto predicate = LLVM::FCmpPredicateAttr::get(op.getContext(),
-                                                    LLVM::FCmpPredicate::ult);
+      auto predicate =
+          LLVM::FCmpPredicateAttr::get(op.getContext(), FPredicate);
       auto llvmFMF =
           getTinyDefaultLLVMFastmathFlagsAttr(op.getContext(), rewriter);
 
-      return vectorOneToOneRewrite<LLVM::FCmpOp, CmpLtOp::Adaptor,
+      return vectorOneToOneRewrite<LLVM::FCmpOp, OpAdaptor,
                                    LLVM::FCmpPredicateAttr, Value, Value,
                                    LLVM::FastmathFlagsAttr>(
-          op, adaptor, *getTypeConverter(), rewriter, predicate,
+          op, adaptor, *this->getTypeConverter(), rewriter, predicate,
           adaptor.getLhs(), adaptor.getRhs(), llvmFMF);
     } else if (llvm::isa<IntegerType>(elementType)) {
-      auto predicate = LLVM::FCmpPredicateAttr::get(op.getContext(),
-                                                    LLVM::FCmpPredicate::ult);
-      auto llvmFMF =
-          getTinyDefaultLLVMFastmathFlagsAttr(op.getContext(), rewriter);
-
-      return vectorOneToOneRewrite<LLVM::FCmpOp, CmpLtOp::Adaptor,
-                                   LLVM::FCmpPredicateAttr, Value, Value,
-                                   LLVM::FastmathFlagsAttr>(
-          op, adaptor, *getTypeConverter(), rewriter, predicate,
-          adaptor.getLhs(), adaptor.getRhs(), llvmFMF);
+      auto predicate =
+          LLVM::ICmpPredicateAttr::get(op.getContext(), IPredicate);
+      return vectorOneToOneRewrite<LLVM::ICmpOp, OpAdaptor,
+                                   LLVM::ICmpPredicateAttr, Value, Value>(
+          op, adaptor, *this->getTypeConverter(), rewriter, predicate,
+          adaptor.getLhs(), adaptor.getRhs());
+    } else {
+      return emitError(op->getLoc(), "Element type should be one of: "
+                                     "IntegerType or FloatType but got: ")
+             << elementType;
     }
   }
 };
-
 } // namespace mlir::tiny

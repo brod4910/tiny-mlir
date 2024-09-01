@@ -1,4 +1,5 @@
 #include "tiny/Conversion/TinyToLLVM/ElementwiseOpToLLVM.h"
+#include "mlir/Dialect/LLVMIR/LLVMAttrs.h"
 #include "tiny/Conversion/TinyToLLVM/PatternTinyToLLVM.h"
 #include "tiny/Dialect/Tiny/IR/TinyDialect.h"
 
@@ -15,6 +16,10 @@ void populateElementwiseOpToLLVM(LLVMTypeConverter &converter,
       GenericBinaryOpToLLVMPattern<SubOp, LLVM::FSubOp, LLVM::SubOp>,
       // TODO: Support UDivOp as well might need to be a non-generic Pattern
       GenericBinaryOpToLLVMPattern<DivOp, LLVM::FDivOp, LLVM::SDivOp>,
-      CmpLtOpToLLVM>(converter);
+      // TODO: Support Unsigned Compares
+      GenericCmpOpToLLVMPattern<CmpLtOp, LLVM::FCmpPredicate::ult,
+                                LLVM::ICmpPredicate::slt>,
+      GenericCmpOpToLLVMPattern<CmpNeOp, LLVM::FCmpPredicate::une,
+                                LLVM::ICmpPredicate::ne>>(converter);
 }
 } // namespace mlir::tiny
