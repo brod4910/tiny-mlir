@@ -375,6 +375,9 @@ def Tiny_ModOp : Tiny_BinaryOp<"mod", [
                                         Pure, 
                                         SameOperandsAndResultElementType
                                       ]> {
+  let arguments = (ins Tiny_IntTensorOrMemRef: $lhs, Tiny_IntTensorOrMemRef: $rhs);
+  let results = (outs Tiny_IntTensorOrMemRef: $result);
+  
   let summary = "Take the mod of the two tensors";
   
   let description = [{
@@ -389,6 +392,9 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
                                         Pure,  
                                         SameOperandsAndResultElementType
                                       ]> {
+  let arguments = (ins Tiny_IntTensorOrMemRef: $lhs, Tiny_IntTensorOrMemRef: $rhs);
+  let results = (outs Tiny_IntTensorOrMemRef: $result);
+  
   let summary = "Take the xor of the two tensors";
   
   let description = [{
@@ -401,7 +407,9 @@ def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
                                         ElementwiseBroadcastable,
                                         Pure
                                       ]> {
-  let arguments = (ins Tiny_TensorOrMemRef: $lhs, IndexAttr: $rhs);
+  let arguments = (ins Tiny_IntTensorOrMemRef: $lhs, Tiny_AnyIntType: $rhs);
+  let results = (outs Tiny_IntTensorOrMemRef: $result);
+
   let summary = "Shift LHS right by RHS.";
   
   let description = [{
@@ -416,7 +424,9 @@ def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
                                         ElementwiseBroadcastable,
                                         Pure
                                       ]> {
-  let arguments = (ins Tiny_TensorOrMemRef: $lhs, IndexAttr: $rhs);
+  let arguments = (ins Tiny_TensorOrMemRef: $lhs, Tiny_AnyIntType: $rhs);
+  let results = (outs Tiny_IntTensorOrMemRef: $result);
+
   let summary = "Shift LHS left by RHS.";
   
   let description = [{

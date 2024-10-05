@@ -31,14 +31,24 @@ namespace mlir::tiny {
 Simple Lowering patterns that don't have multiple type versions of the same Op
 or that require special treatment when converting to LLMV.
 */
+
+/*
+---------------------------------------------------
+------------------- Unary Ops ---------------------
+--------------------------------------------------- */
 using Log2OpToLLVM = VectorConvertToLLVMPattern<Log2Op, LLVM::Log2Op>;
 using BitcastOpToLLVM = VectorConvertToLLVMPattern<BitcastOp, LLVM::BitcastOp>;
 using SinOpToLLVM = VectorConvertToLLVMPattern<SinOp, LLVM::SinOp>;
 using SqrtOpToLLVM = VectorConvertToLLVMPattern<SqrtOp, LLVM::SqrtOp>;
 using Exp2OpToLLVM = VectorConvertToLLVMPattern<Exp2Op, LLVM::Exp2Op>;
-
 // TODO: implement Cast properly
 // using CastOpLowering = VectorConvertToLLVMPattern<CastOp, LLVM::Cast>
+
+/*
+---------------------------------------------------
+------------------ Binary Ops ---------------------
+--------------------------------------------------- */
+using XOROpToLLVM = VectorConvertToLLVMPattern<XOROp, LLVM::XOrOp>;
 
 /*
 To stay as close to the tinygrad front-end as possible, this section has
