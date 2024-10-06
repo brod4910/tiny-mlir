@@ -17,9 +17,12 @@ void populateElementwiseOpToLLVM(LLVMTypeConverter &converter,
       // TODO: Support UDivOp as well might need to be a non-generic Pattern
       GenericBinaryOpToLLVMPattern<DivOp, LLVM::FDivOp, LLVM::SDivOp>,
       // TODO: Support Unsigned Compares
+      GenericCmpOpToLLVMPattern<CmpNeOp, LLVM::FCmpPredicate::une,
+                                LLVM::ICmpPredicate::ne>,
       GenericCmpOpToLLVMPattern<CmpLtOp, LLVM::FCmpPredicate::ult,
                                 LLVM::ICmpPredicate::slt>,
-      GenericCmpOpToLLVMPattern<CmpNeOp, LLVM::FCmpPredicate::une,
-                                LLVM::ICmpPredicate::ne>>(converter);
+      MaximumOpToLLVM,
+      GenericBinaryOpToLLVMPattern<ModOp, LLVM::FRemOp, LLVM::SRemOp>,
+      XOROpToLLVM, ShrOpToLLVM, ShlOpToLLV>(converter);
 }
 } // namespace mlir::tiny

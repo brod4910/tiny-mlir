@@ -48,8 +48,11 @@ using Exp2OpToLLVM = VectorConvertToLLVMPattern<Exp2Op, LLVM::Exp2Op>;
 ---------------------------------------------------
 ------------------ Binary Ops ---------------------
 --------------------------------------------------- */
+using MaximumOpToLLVM = VectorConvertToLLVMPattern<MaximumOp, LLVM::MaximumOp>;
 using XOROpToLLVM = VectorConvertToLLVMPattern<XOROp, LLVM::XOrOp>;
-
+// TODO: Explore Logical Shr operand as well?
+using ShrOpToLLVM = VectorConvertToLLVMPattern<ShrOp, LLVM::AShrOp>;
+using ShlOpToLLV = VectorConvertToLLVMPattern<ShlOp, LLVM::ShlOp>;
 /*
 To stay as close to the tinygrad front-end as possible, this section has
 duplicate codels that could be circumvented by just adding Float and Int

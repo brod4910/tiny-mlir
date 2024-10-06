@@ -375,8 +375,8 @@ def Tiny_ModOp : Tiny_BinaryOp<"mod", [
                                         Pure, 
                                         SameOperandsAndResultElementType
                                       ]> {
-  let arguments = (ins Tiny_IntTensorOrMemRef: $lhs, Tiny_IntTensorOrMemRef: $rhs);
-  let results = (outs Tiny_IntTensorOrMemRef: $result);
+  let arguments = (ins Tiny_AnyIntType: $lhs, Tiny_AnyIntType: $rhs);
+  let results = (outs Tiny_AnyIntType: $result);
   
   let summary = "Take the mod of the two tensors";
   
@@ -392,8 +392,8 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
                                         Pure,  
                                         SameOperandsAndResultElementType
                                       ]> {
-  let arguments = (ins Tiny_IntTensorOrMemRef: $lhs, Tiny_IntTensorOrMemRef: $rhs);
-  let results = (outs Tiny_IntTensorOrMemRef: $result);
+  let arguments = (ins Tiny_AnyIntType: $lhs, Tiny_AnyIntType: $rhs);
+  let results = (outs Tiny_AnyIntType: $result);
   
   let summary = "Take the xor of the two tensors";
   
@@ -402,13 +402,30 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
   }];
 }
 
+def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
+                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
+                                        ElementwiseBroadcastable,
+                                        Pure
+                                      ]> {
+  let arguments = (ins Tiny_AnyIntType: $lhs, Tiny_AnyIntType: $rhs);
+  let results = (outs Tiny_AnyIntType: $result);
+
+  let summary = "Shift LHS left by RHS.";
+  
+  let description = [{
+    An operation that takes the shift-right of of LHS by RHS.
+  }];
+
+  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` functional-type(operands, results)";
+}
+
 def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         ElementwiseBroadcastable,
                                         Pure
                                       ]> {
-  let arguments = (ins Tiny_IntTensorOrMemRef: $lhs, Tiny_AnyIntType: $rhs);
-  let results = (outs Tiny_IntTensorOrMemRef: $result);
+  let arguments = (ins Tiny_AnyIntType: $lhs, Tiny_AnyIntType: $rhs);
+  let results = (outs Tiny_AnyIntType: $result);
 
   let summary = "Shift LHS right by RHS.";
   
@@ -419,22 +436,6 @@ def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` functional-type(operands, results)";
 }
 
-def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
-                                        DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
-                                        ElementwiseBroadcastable,
-                                        Pure
-                                      ]> {
-  let arguments = (ins Tiny_TensorOrMemRef: $lhs, Tiny_AnyIntType: $rhs);
-  let results = (outs Tiny_IntTensorOrMemRef: $result);
-
-  let summary = "Shift LHS left by RHS.";
-  
-  let description = [{
-    An operation that takes the shift-right of of LHS by RHS.
-  }];
-
-  let assemblyFormat = "$lhs `,` $rhs attr-dict `:` functional-type(operands, results)";
-}
 
 /* 
 --------------------------------------------------- 
