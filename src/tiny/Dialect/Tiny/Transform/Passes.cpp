@@ -1,4 +1,6 @@
 #include "tiny/Dialect/Tiny/Transform/Passes.h"
+#include "mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/Utils/Utils.h"
 #include "mlir/Dialect/Traits.h"
@@ -68,10 +70,12 @@ struct TinyBufferizePass
     auto module = getOperation();
     auto *context = &getContext();
 
-    BufferizationOptions options = getPartialBufferizationOptions();
+    OneShotBufferizationOptions options;
+    options.bufferizeFunctionBoundaries = true;
+    options.printConflicts = true;
     options.opFilter.allowDialect<tiny::TinyDialect>();
 
-    if (failed(bufferizeOp(getOperation(), options))) {
+    if (failed(runOneShotBufferize(getOperation(), options))) {
       return signalPassFailure();
     }
   }
@@ -128,7 +132,7 @@ struct ConvertAnyElementwiseBroadcastableOpToLinalg : public RewritePattern {
         [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
           auto *scalarOp =
               builder.create(loc, op->getName().getIdentifier(),
-                             regionArgs.take_back(op->getNumOperands()),
+                             regionArgs.take_front(op->getNumOperands()),
                              {resultType.getElementType()}, op->getAttrs());
           builder.create<linalg::YieldOp>(loc, scalarOp->getResults());
         });
@@ -148,7 +152,7 @@ TypedAttr selectInitialValue(Operation *op, Type elementType,
   if (dyn_cast<tiny::MaximumOp>(op) && isa<IntegerType>(elementType))
     return rewriter.getIntegerAttr(
         elementType,
-        APInt::getSignedMaxValue(elementType.getIntOrFloatBitWidth()));
+        APInt::getSignedMinValue(elementType.getIntOrFloatBitWidth()));
 
   if (dyn_cast<tiny::MaximumOp>(op) && isa<FloatType>(elementType))
     return rewriter.getFloatAttr(
@@ -159,7 +163,7 @@ TypedAttr selectInitialValue(Operation *op, Type elementType,
   return {};
 }
 
-template <typename SourceOp>
+template <typename SourceOp, typename ScalarOp>
 struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
   using OpRewritePattern<SourceOp>::OpRewritePattern;
 
@@ -221,7 +225,7 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
         op, op->getResultTypes(), op->getOperand(0), filledTensor, affineMaps,
         iteratorTypes,
         [&](OpBuilder &builder, Location loc, ValueRange regionArgs) {
-          Value scalarOp = rewriter.create<tiny::AddOp>(
+          Value scalarOp = rewriter.create<ScalarOp>(
               loc, resultType.getElementType(), regionArgs[0], regionArgs[1]);
           builder.create<linalg::YieldOp>(loc, scalarOp);
         });
@@ -232,8 +236,9 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
 
 void populateElementwiseBroadcastableToLinalg(RewritePatternSet &patterns) {
   patterns.add<ConvertAnyElementwiseBroadcastableOpToLinalg,
-               ConvertReduceOpToLinalg<tiny::SumOp>,
-               ConvertReduceOpToLinalg<tiny::MaxOp>>(patterns.getContext());
+               ConvertReduceOpToLinalg<tiny::SumOp, tiny::AddOp>,
+               ConvertReduceOpToLinalg<tiny::MaxOp, tiny::MaximumOp>>(
+      patterns.getContext());
 }
 
 struct TinyElementwiseToLinalgPass
