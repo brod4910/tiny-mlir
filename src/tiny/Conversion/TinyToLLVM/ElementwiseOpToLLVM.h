@@ -53,11 +53,6 @@ using XOROpToLLVM = VectorConvertToLLVMPattern<XOROp, LLVM::XOrOp>;
 // TODO: Explore Logical Shr operand as well?
 using ShrOpToLLVM = VectorConvertToLLVMPattern<ShrOp, LLVM::AShrOp>;
 using ShlOpToLLV = VectorConvertToLLVMPattern<ShlOp, LLVM::ShlOp>;
-/*
-To stay as close to the tinygrad front-end as possible, this section has
-duplicate codels that could be circumvented by just adding Float and Int
-variants of the ops. No fun in that though :)
-*/
 
 TypedAttr getConstantAttr(Type type, int64_t value, PatternRewriter &rewriter) {
   if (auto shapedTy = dyn_cast<ShapedType>(type)) {

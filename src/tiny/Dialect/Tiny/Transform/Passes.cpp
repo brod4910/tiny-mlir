@@ -221,9 +221,6 @@ struct ConvertReduceOpToLinalg : public OpRewritePattern<SourceOp> {
         rewriter.getMultiDimIdentityMap(valueType.getRank()),
         AffineMap::get(valueType.getRank(), 0, resultExpr, op.getContext())};
 
-    // TODO: Fix the static add opp here since for reduction, we can take
-    // the max or sum. For sum this would work. For max we need to check
-    // the value at dim is greater than current value.
     rewriter.replaceOpWithNewOp<linalg::GenericOp>(
         op, op->getResultTypes(), op->getOperand(0), filledTensor, affineMaps,
         iteratorTypes,

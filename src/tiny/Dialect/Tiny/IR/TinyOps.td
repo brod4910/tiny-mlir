@@ -226,7 +226,8 @@ def Tiny_RecipOp : Tiny_UnaryOp<"recip", [
 --------------------------------------------------- */
 
 class Tiny_ReduceOp<string mnemonic, list<Trait> traits = []> : Tiny_Op<mnemonic, traits> {
-  let arguments = (ins Tiny_AnyType: $value, 
+  let arguments = (ins Tiny_AnyType: $value,
+                    // TODO: change to I32
                    DefaultValuedAttr<SI32Attr, "0">: $axis);
   let results = (outs Tiny_AnyType: $result);
 
@@ -370,6 +371,7 @@ def Tiny_MaximumOp : Tiny_BinaryOp<"maximum", [
 }
 
 def Tiny_ModOp : Tiny_BinaryOp<"mod", [
+                                        // DeclareOpInterfaceMethods<InferIntRangeInterface>,
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         ElementwiseBroadcastable,
                                         Pure, 
@@ -386,6 +388,7 @@ def Tiny_ModOp : Tiny_BinaryOp<"mod", [
 }
 
 def Tiny_XOROp : Tiny_BinaryOp<"xor", [
+                                        // DeclareOpInterfaceMethods<InferIntRangeInterface>,
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         Commutative,
                                         ElementwiseBroadcastable,
@@ -403,6 +406,7 @@ def Tiny_XOROp : Tiny_BinaryOp<"xor", [
 }
 
 def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
+                                        // DeclareOpInterfaceMethods<InferIntRangeInterface>,
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         ElementwiseBroadcastable,
                                         Pure
@@ -420,6 +424,7 @@ def Tiny_ShlOp : Tiny_BinaryOp<"shl", [
 }
 
 def Tiny_ShrOp : Tiny_BinaryOp<"shr", [
+                                        // DeclareOpInterfaceMethods<InferIntRangeInterface>,
                                         DeclareOpInterfaceMethods<InferShapedTypeOpInterface, ["inferReturnTypeComponents"]>,
                                         ElementwiseBroadcastable,
                                         Pure
