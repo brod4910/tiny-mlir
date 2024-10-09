@@ -11,18 +11,26 @@ void populateElementwiseOpToLLVM(LLVMTypeConverter &converter,
       BitcastOpToLLVM, Exp2OpToLLVM, Log2OpToLLVM, NegOpToLLVM, RecipOpToLLVM,
       SinOpToLLVM, SqrtOpToLLVM,
       /* -------- Binary Patterns -------- */
-      GenericBinaryOpToLLVMPattern<MulOp, LLVM::FMulOp, LLVM::MulOp>,
-      GenericBinaryOpToLLVMPattern<AddOp, LLVM::FAddOp, LLVM::AddOp>,
-      GenericBinaryOpToLLVMPattern<SubOp, LLVM::FSubOp, LLVM::SubOp>,
-      // TODO: Support UDivOp as well might need to be a non-generic Pattern
-      GenericBinaryOpToLLVMPattern<DivOp, LLVM::FDivOp, LLVM::SDivOp>,
-      // TODO: Support Unsigned Compares
+      // Two's complement so unsigned/signed the same
+      GenericBinaryOpToLLVMPattern<MulOp, LLVM::FMulOp, LLVM::MulOp,
+                                   LLVM::MulOp>,
+      // Two's complement so unsigned/signed the same
+      GenericBinaryOpToLLVMPattern<AddOp, LLVM::FAddOp, LLVM::AddOp,
+                                   LLVM::AddOp>,
+      // Two's complement so unsigned/signed the same
+      GenericBinaryOpToLLVMPattern<SubOp, LLVM::FSubOp, LLVM::SubOp,
+                                   LLVM::SubOp>,
+      GenericBinaryOpToLLVMPattern<DivOp, LLVM::FDivOp, LLVM::SDivOp,
+                                   LLVM::UDivOp>,
       GenericCmpOpToLLVMPattern<CmpNeOp, LLVM::FCmpPredicate::une,
+                                LLVM::ICmpPredicate::ne,
                                 LLVM::ICmpPredicate::ne>,
       GenericCmpOpToLLVMPattern<CmpLtOp, LLVM::FCmpPredicate::ult,
-                                LLVM::ICmpPredicate::slt>,
+                                LLVM::ICmpPredicate::slt,
+                                LLVM::ICmpPredicate::ult>,
       MaximumOpToLLVM,
-      GenericBinaryOpToLLVMPattern<ModOp, LLVM::FRemOp, LLVM::SRemOp>,
-      XOROpToLLVM, ShrOpToLLVM, ShlOpToLLV>(converter);
+      GenericBinaryOpToLLVMPattern<ModOp, LLVM::FRemOp, LLVM::SRemOp,
+                                   LLVM::URemOp>,
+      XOROpToLLVM, ShrOpToLLVM, ShlOpToLLVM>(converter);
 }
 } // namespace mlir::tiny
