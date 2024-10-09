@@ -49,38 +49,51 @@ New New Note 10/8/24:
     not using signless-integers since there is only one use of SI in the entire MLIR repo.
 
     Maybe it isn't as bad as I think it is but re-defining all of the types (SI, UI, I) looked ugly.
+
+New New New Note 10/8/24:
+    Okay, another change, after stepping away, in an effor to make the frontend simple, I've decided to go with different
+    types instead of ops. At the end of the day this is an ML compiler where the behavior and semantics should be known
+    before hand (overflow, typing use cases, etc.) so forking typing to the user in exchange for static typing semantics.
 */
 
-def Tiny_Float : AnyTypeOf<[BF16, F16, F32, F64]>;
-def Tiny_Int : AnyTypeOf<[I1, I8, I16, I32, I64]>;
+def Tiny_Float : AnyTypeOf<[BF16, F16, F32]>;
+def Tiny_SInt : AnyTypeOf<[I1, I8, I16, I32]>;
+def Tiny_UInt : AnyTypeOf<[UI1, UI8, UI16, UI32]>;
 def Tiny_Bit : AnyTypeOf<[I1]>;
 
-def Tiny_ElementType : AnyTypeOf<[Tiny_Float, Tiny_Int, Tiny_Bit]>;
+def Tiny_ElementType : AnyTypeOf<[Tiny_Float, Tiny_SInt, Tiny_UInt, Tiny_Bit]>;
 
 def Tiny_ScalarTensor : 0DTensorOf<[Tiny_ElementType]>;
 def Tiny_ScalarFloatTensor : 0DTensorOf<[Tiny_Float]>;
-def Tiny_ScalarIntTensor : 0DTensorOf<[Tiny_Int]>;
+def Tiny_ScalarIntTensor : 0DTensorOf<[Tiny_SInt]>;
+def Tiny_ScalarUIntTensor : 0DTensorOf<[Tiny_UInt]>;
 def Tiny_ScalarBitTensor : 0DTensorOf<[Tiny_Bit]>;
 
 def Tiny_Tensor : RankedTensorOf<[Tiny_ElementType]>;
 def Tiny_FloatTensor : RankedTensorOf<[Tiny_Float]>;
-def Tiny_IntTensor : RankedTensorOf<[Tiny_Int]>;
+def Tiny_SIntTensor : RankedTensorOf<[Tiny_SInt]>;
+def Tiny_UIntTensor : RankedTensorOf<[Tiny_UInt]>;
 def Tiny_BitTensor : RankedTensorOf<[Tiny_Bit]>;
 
 def Tiny_MemRef : Non0RankedMemRefOf<[Tiny_ElementType]>;
 def Tiny_FloatMemRef : Non0RankedMemRefOf<[Tiny_Float]>;
-def Tiny_IntMemRef : Non0RankedMemRefOf<[Tiny_Int]>;
+def Tiny_SIntMemRef : Non0RankedMemRefOf<[Tiny_SInt]>;
+def Tiny_UIntMemRef : Non0RankedMemRefOf<[Tiny_UInt]>;
 def Tiny_BitMemRef : Non0RankedMemRefOf<[Tiny_Bit]>;
 
 def Tiny_TensorOrMemRef : AnyTypeOf<[Tiny_Tensor, Tiny_MemRef]>;
 def Tiny_FloatTensorOrMemRef : AnyTypeOf<[Tiny_FloatTensor, Tiny_FloatMemRef]>;
-def Tiny_IntTensorOrMemRef : AnyTypeOf<[Tiny_IntTensor, Tiny_IntMemRef]>;
+def Tiny_SIntTensorOrMemRef : AnyTypeOf<[Tiny_SIntTensor, Tiny_SIntMemRef]>;
+def Tiny_UIntTensorOrMemRef : AnyTypeOf<[Tiny_UIntTensor, Tiny_UIntMemRef]>;
 def Tiny_BitTensorOrMemRef : AnyTypeOf<[Tiny_BitTensor, Tiny_BitMemRef]>;
 
 def Tiny_AnyType : AnyTypeOf<[Tiny_TensorOrMemRef, Tiny_ElementType]>;
 def Tiny_AnyFloatType : AnyTypeOf<[Tiny_FloatTensorOrMemRef, Tiny_Float]>;
-def Tiny_AnyIntType : AnyTypeOf<[Tiny_IntTensorOrMemRef, Tiny_Int]>;
+def Tiny_AnySIntType : AnyTypeOf<[Tiny_SIntTensorOrMemRef, Tiny_SInt]>;
+def Tiny_AnyUIntType : AnyTypeOf<[Tiny_UIntTensorOrMemRef, Tiny_UInt]>;
 def Tiny_AnyBitType : AnyTypeOf<[Tiny_BitTensorOrMemRef, Tiny_Bit]>;
+
+def Tiny_AnyIntType : AnyTypeOf<[Tiny_UIntTensorOrMemRef, Tiny_UInt, Tiny_SIntTensorOrMemRef, Tiny_SInt]>;
 
 /* 
 --------------------------------------------------- 

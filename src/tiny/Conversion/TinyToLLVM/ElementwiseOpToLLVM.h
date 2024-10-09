@@ -52,7 +52,7 @@ using MaximumOpToLLVM = VectorConvertToLLVMPattern<MaximumOp, LLVM::MaximumOp>;
 using XOROpToLLVM = VectorConvertToLLVMPattern<XOROp, LLVM::XOrOp>;
 // TODO: Explore Logical Shr operand as well?
 using ShrOpToLLVM = VectorConvertToLLVMPattern<ShrOp, LLVM::AShrOp>;
-using ShlOpToLLV = VectorConvertToLLVMPattern<ShlOp, LLVM::ShlOp>;
+using ShlOpToLLVM = VectorConvertToLLVMPattern<ShlOp, LLVM::ShlOp>;
 
 TypedAttr getConstantAttr(Type type, int64_t value, PatternRewriter &rewriter) {
   if (auto shapedTy = dyn_cast<ShapedType>(type)) {
@@ -64,16 +64,21 @@ TypedAttr getConstantAttr(Type type, int64_t value, PatternRewriter &rewriter) {
   return rewriter.getIntegerAttr(type, value);
 }
 
-template <typename SourceOp, typename Op1, typename Op2,
-          typename T1 = FloatType, typename T2 = IntegerType>
+template <typename SourceOp, typename FloatOp, typename SIntegerOp,
+          typename UIntegerOp>
 LogicalResult selectOpFromElementType(SourceOp op, Type elementType,
                                       llvm::StringLiteral &operationName) {
-  if (llvm::isa<T1>(elementType)) {
-    operationName = Op1::getOperationName();
+  if (llvm::isa<FloatType>(elementType)) {
+    operationName = FloatOp::getOperationName();
     return success();
-  } else if (llvm::isa<T2>(elementType)) {
-    operationName = Op2::getOperationName();
+  } else if (llvm::isa<IntegerType>(elementType)) {
+    if (elementType.isSignlessInteger()) {
+      operationName = SIntegerOp::getOperationName();
+    } else {
+      operationName = UIntegerOp::getOperationName();
+    }
     return success();
+
   } else {
     return emitError(op->getLoc(), "Element type should be one of: "
                                    "IntegerType or FloatType but got: ")
@@ -177,7 +182,8 @@ class RecipOpToLLVM : public ConvertOpToLLVMPattern<RecipOp> {
   }
 };
 
-template <typename SourceOp, typename FloatOp, typename IntegerOp>
+template <typename SourceOp, typename FloatOp, typename SIntegerOp,
+          typename UIntegerOp>
 class GenericBinaryOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
   using ConvertOpToLLVMPattern<SourceOp>::ConvertOpToLLVMPattern;
   using OpAdaptor = typename SourceOp::Adaptor;
@@ -191,22 +197,27 @@ class GenericBinaryOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
 
     llvm::StringLiteral operationName{""};
 
-    if (selectOpFromElementType<SourceOp, FloatOp, IntegerOp>(
+    if (selectOpFromElementType<SourceOp, FloatOp, SIntegerOp, UIntegerOp>(
             op, resultElementType, operationName)
             .failed()) {
       return failure();
     }
 
-    auto llvmFMF =
-        getTinyDefaultLLVMFastmathFlagsNamedAttr(op->getContext(), rewriter);
+    SmallVector<NamedAttribute, 1> targetAttrs;
+    if (llvm::isa<FloatType>(resultElementType)) {
+      auto llvmFMF =
+          getTinyDefaultLLVMFastmathFlagsNamedAttr(op->getContext(), rewriter);
+      targetAttrs.push_back(llvmFMF);
+    }
+
     return LLVM::detail::vectorOneToOneRewrite(
-        op, operationName, adaptor.getOperands(), {llvmFMF},
+        op, operationName, adaptor.getOperands(), targetAttrs,
         *this->getTypeConverter(), rewriter);
   }
 };
 
 template <typename SourceOp, LLVM::FCmpPredicate FPredicate,
-          LLVM::ICmpPredicate IPredicate>
+          LLVM::ICmpPredicate SIPredicate, LLVM::ICmpPredicate UIPredicate>
 class GenericCmpOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
   using ConvertOpToLLVMPattern<SourceOp>::ConvertOpToLLVMPattern;
   using OpAdaptor = typename SourceOp::Adaptor;
@@ -229,8 +240,14 @@ class GenericCmpOpToLLVMPattern : public ConvertOpToLLVMPattern<SourceOp> {
           op, adaptor, *this->getTypeConverter(), rewriter, predicate,
           adaptor.getLhs(), adaptor.getRhs(), llvmFMF);
     } else if (llvm::isa<IntegerType>(elementType)) {
-      auto predicate =
-          LLVM::ICmpPredicateAttr::get(op.getContext(), IPredicate);
+      LLVM::ICmpPredicateAttr predicate;
+
+      if (elementType.isSignlessInteger()) {
+        predicate = LLVM::ICmpPredicateAttr::get(op.getContext(), SIPredicate);
+      } else {
+        predicate = LLVM::ICmpPredicateAttr::get(op.getContext(), UIPredicate);
+      }
+
       return vectorOneToOneRewrite<LLVM::ICmpOp, OpAdaptor,
                                    LLVM::ICmpPredicateAttr, Value, Value>(
           op, adaptor, *this->getTypeConverter(), rewriter, predicate,
