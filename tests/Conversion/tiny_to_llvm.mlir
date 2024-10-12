@@ -104,6 +104,12 @@ module {
         tiny.return %0 : tensor<1x16xi32>
     }
 
+    tiny.func @test_uint_div_llvm(%arg0 : tensor<1x16xui32>, %arg1 : tensor<1x16xui32>) -> (tensor<1x16xui32>) {
+        %0 = tiny.div %arg0, %arg1 : (tensor<1x16xui32>, tensor<1x16xui32>) -> tensor<1x16xui32>
+
+        tiny.return %0 : tensor<1x16xui32>
+    }
+
     // tiny.func @test_matmul_llvm(%a: tensor<512x768xf32>, %b: tensor<768x512xf32>) -> tensor<512x512xf32> {
     //     %av = tiny.view %a[512, 1, 768] : tensor<512x768xf32> -> tensor<512x1x768xf32>
     //     %bv = tiny.view %b[1, 512, 768] : tensor<768x512xf32> -> tensor<1x512x768xf32>
