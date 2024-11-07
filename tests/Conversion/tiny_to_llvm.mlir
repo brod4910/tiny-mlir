@@ -5,6 +5,7 @@
 module {
     tiny.func @test_log2_llvm(%arg0 : tensor<1x16xf32>) -> (tensor<1x16xf32>) {
         %0 = tiny.log2 %arg0 : tensor<1x16xf32> -> tensor<1x16xf32>
+        
         tiny.return %0 : tensor<1x16xf32>
     }
 
@@ -67,14 +68,8 @@ module {
 
         tiny.return %0 : tensor<1x16xi1>
     }
-    
-    tiny.func @test_imaximum_llvm(%arg0 : tensor<1x16xi32>, %arg1 : tensor<1x16xi32>) -> (tensor<1x16xi32>) {
-        %0 = tiny.maximum %arg0, %arg1 : (tensor<1x16xi32>, tensor<1x16xi32>) -> tensor<1x16xi32>
 
-        tiny.return %0 : tensor<1x16xi32>
-    }
-
-    tiny.func @test_fmaximum_llvm(%arg0 : tensor<1x16xf32>, %arg1 : tensor<1x16xf32>) -> (tensor<1x16xf32>) {
+    tiny.func @test_maximum_llvm(%arg0 : tensor<1x16xf32>, %arg1 : tensor<1x16xf32>) -> (tensor<1x16xf32>) {
         %0 = tiny.maximum %arg0, %arg1 : (tensor<1x16xf32>, tensor<1x16xf32>) -> tensor<1x16xf32>
 
         tiny.return %0 : tensor<1x16xf32>

@@ -7,8 +7,8 @@
 // ----------------------------------- 
 
 Constraint HasSameElementType(value1: Value, value2: Value) [{
-    return mlir::success(value1.getType().cast<mlir::ShapedType>().getElementType() == 
-                  value2.getType().cast<mlir::ShapedType>().getElementType());
+    return mlir::success(mlir::cast<mlir::ShapedType>(value1.getType()).getElementType() == 
+                  mlir::cast<mlir::ShapedType>(value2.getType()).getElementType());
 }];
 
 // ----------------------------------- 

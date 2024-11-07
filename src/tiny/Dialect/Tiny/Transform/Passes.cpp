@@ -248,7 +248,7 @@ struct TinyElementwiseToLinalgPass
       TinyElementwiseToLinalgPass>::TinyElementwiseToLinalgBase;
 
   void runOnOperation() final {
-    auto *func = getOperation();
+    auto *op = getOperation();
     auto *context = &getContext();
 
     RewritePatternSet patterns(context);
@@ -262,7 +262,7 @@ struct TinyElementwiseToLinalgPass
              !tiny::isReducerOpOnRankedTensors(op);
     });
 
-    if (failed(applyPartialConversion(func, target, std::move(patterns)))) {
+    if (failed(applyPartialConversion(op, target, std::move(patterns)))) {
       signalPassFailure();
     }
   }
@@ -279,13 +279,14 @@ struct FuncOpPattern : OpRewritePattern<tiny::FuncOp> {
       : OpRewritePattern<tiny::FuncOp>(context) {}
 
   LogicalResult matchAndRewrite(tiny::FuncOp op,
-                                PatternRewriter &rewriter) const override {
-    auto newOp = rewriter.replaceOpWithNewOp<func::FuncOp>(
-        op, op.getName(), op.getFunctionType());
+                                PatternRewriter &rewriter) const final {
+    auto newFunc = rewriter.create<func::FuncOp>(op->getLoc(), op.getName(),
+                                                 op.getFunctionType());
 
-    addNamedAttrs(newOp, op->getAttrDictionary());
-    rewriter.inlineRegionBefore(op.getBody(), newOp.getBody(),
-                                newOp.getBody().end());
+    addNamedAttrs(newFunc, op->getAttrDictionary());
+    rewriter.inlineRegionBefore(op.getRegion(), newFunc.getBody(),
+                                newFunc.end());
+    rewriter.eraseOp(op);
     return success();
   }
 };
@@ -296,7 +297,7 @@ public:
       : OpRewritePattern<tiny::CallOp>(context) {}
 
   LogicalResult matchAndRewrite(tiny::CallOp op,
-                                PatternRewriter &rewriter) const override {
+                                PatternRewriter &rewriter) const final {
     auto newOp = rewriter.replaceOpWithNewOp<func::CallOp>(
         op, op.getCallee(), op.getResultTypes(), op->getOperands());
     addNamedAttrs(newOp, op->getAttrDictionary());
@@ -310,8 +311,9 @@ public:
       : OpRewritePattern<tiny::ReturnOp>(context) {}
 
   LogicalResult matchAndRewrite(tiny::ReturnOp op,
-                                PatternRewriter &rewriter) const override {
-    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, op.getOperands());
+                                PatternRewriter &rewriter) const final {
+    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, op->getResultTypes(),
+                                                op.getOperands());
     return success();
   }
 };

@@ -33,7 +33,7 @@ class ViewOpToLLVM : ConvertOpToLLVMPattern<ViewOp> {
 
   LogicalResult
   matchAndRewrite(ViewOp op, OpAdaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
+                  ConversionPatternRewriter &rewriter) const final {
 
     return success();
   }
