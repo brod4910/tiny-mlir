@@ -66,7 +66,6 @@ public:
     // populateAffineToStdConversionPatterns(patterns);
     // populateVectorToSCFConversionPatterns(patterns);
     // populateVectorToLLVMConversionPatterns(typeConverter, patterns);
-    populateReconcileUnrealizedCastsPatterns(patterns);
 
     if (failed(applyPartialConversion(mod, target, std::move(patterns)))) {
       return signalPassFailure();

@@ -459,7 +459,7 @@ def Tiny_EmptyOp : Tiny_LoadOp<"empty", [InferTensorTypeAdaptor, Pure]> {
     Initializes an empty tensor of the specific shape and type.
   }];
 
-  let assemblyFormat = "$shape `,` $elementType attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$shape `,` $elementType attr-dict `:` type($result)";
 }
 
 def Tiny_CopyOp : Tiny_LoadOp<"copy", [SameOperandsAndResultShape, Pure]> {
@@ -517,7 +517,7 @@ def Tiny_RandNOp : Tiny_LoadOp<"randn", [Pure]> {
     Initializes a new tensor with random values between 0-1.
   }];
 
-  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$shape `,` $elementType attr-dict `:` type($result)";
 }
 
 def Tiny_FillOp : Tiny_LoadOp<"fill", []> {
@@ -530,7 +530,7 @@ def Tiny_FillOp : Tiny_LoadOp<"fill", []> {
     Initializes a new tensor with fill value.
   }];
 
-  let assemblyFormat = "operands attr-dict `:` functional-type(operands, results)";
+  let assemblyFormat = "$value `,` $fill_value attr-dict `:` functional-type(operands, results)";
 }
 
 /* 
